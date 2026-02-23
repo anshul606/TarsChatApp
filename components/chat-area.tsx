@@ -11,7 +11,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { MessageItem } from "@/components/message-item";
 import { PresenceBadge } from "@/components/presence-badge";
 import { TypingIndicator } from "@/components/typing-indicator";
-import { Send, MessageSquare } from "lucide-react";
+import { Send, MessageSquare, ArrowDown } from "lucide-react";
 
 /**
  * ChatArea Component
@@ -37,8 +37,11 @@ interface ChatAreaProps {
 
 export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
   const [messageContent, setMessageContent] = useState("");
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  const [showNewMessagesButton, setShowNewMessagesButton] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const previousMessageCountRef = useRef<number>(0);
 
   // Subscribe to messages for this conversation
   const messages = useQuery(api.messages.list, { conversationId });
@@ -57,9 +60,31 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
     }
   }, [conversationId, messages, markRead]);
 
-  // Auto-scroll to bottom when new messages arrive
-  useEffect(() => {
+  // Check if user is scrolled to bottom
+  const checkIfAtBottom = () => {
     if (scrollAreaRef.current) {
+      const scrollContainer = scrollAreaRef.current.querySelector(
+        "[data-radix-scroll-area-viewport]",
+      );
+      if (scrollContainer) {
+        const threshold = 50; // pixels from bottom to consider "at bottom"
+        const isBottom =
+          scrollContainer.scrollHeight -
+            scrollContainer.scrollTop -
+            scrollContainer.clientHeight <=
+          threshold;
+        setIsAtBottom(isBottom);
+        // Hide button when user scrolls to bottom manually
+        if (isBottom) {
+          setShowNewMessagesButton(false);
+        }
+      }
+    }
+  };
+
+  // Auto-scroll to bottom only when user is already at bottom
+  useEffect(() => {
+    if (scrollAreaRef.current && isAtBottom) {
       const scrollContainer = scrollAreaRef.current.querySelector(
         "[data-radix-scroll-area-viewport]",
       );
@@ -67,7 +92,38 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
         scrollContainer.scrollTop = scrollContainer.scrollHeight;
       }
     }
-  }, [messages]);
+  }, [messages, isAtBottom]);
+
+  // Show "New messages" button when new messages arrive while scrolled up
+  useEffect(() => {
+    if (messages && messages.length > previousMessageCountRef.current) {
+      // New messages have arrived
+      if (!isAtBottom) {
+        setShowNewMessagesButton(true);
+      }
+      previousMessageCountRef.current = messages.length;
+    }
+  }, [messages, isAtBottom]);
+
+  // Track scroll position
+  useEffect(() => {
+    const scrollContainer = scrollAreaRef.current?.querySelector(
+      "[data-radix-scroll-area-viewport]",
+    );
+    if (!scrollContainer) return;
+
+    const handleScroll = () => {
+      checkIfAtBottom();
+    };
+
+    scrollContainer.addEventListener("scroll", handleScroll);
+    // Check initial position
+    checkIfAtBottom();
+
+    return () => {
+      scrollContainer.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
 
   // Cleanup typing timeout on unmount
   useEffect(() => {
@@ -141,6 +197,21 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
     }
   };
 
+  const scrollToBottom = () => {
+    if (scrollAreaRef.current) {
+      const scrollContainer = scrollAreaRef.current.querySelector(
+        "[data-radix-scroll-area-viewport]",
+      );
+      if (scrollContainer) {
+        scrollContainer.scrollTo({
+          top: scrollContainer.scrollHeight,
+          behavior: "smooth",
+        });
+        setShowNewMessagesButton(false);
+      }
+    }
+  };
+
   const getInitials = (name: string) => {
     return name
       .split(" ")
@@ -154,7 +225,7 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
     <div className="flex h-full w-full flex-col">
       {/* Chat Header */}
       {conversation && (
-        <div className="border-b bg-background px-6 py-4 shrink-0">
+        <div className="border-b bg-background px-6 py-4 shrink-0 z-10">
           <div className="flex items-center gap-3">
             {conversation.isGroup ? (
               <>
@@ -208,45 +279,63 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
       )}
 
       {/* Messages Area */}
-      <ScrollArea ref={scrollAreaRef} className="flex-1 bg-muted/20">
-        {messages === undefined ? (
-          // Loading state
-          <div className="flex items-center justify-center h-full text-muted-foreground">
-            Loading messages...
-          </div>
-        ) : messages.length === 0 ? (
-          // Empty state - Requirement 5.2
-          <div className="flex flex-col items-center justify-center h-full text-center px-4">
-            <MessageSquare className="h-16 w-16 text-muted-foreground/50 mb-4" />
-            <p className="text-lg font-medium text-muted-foreground">
-              No messages yet
-            </p>
-            <p className="text-sm text-muted-foreground mt-2">
-              Start the conversation by sending a message below
-            </p>
-          </div>
-        ) : (
-          // Message list
-          <div className="flex flex-col gap-1 py-4 px-4">
-            {messages.map((message) => (
-              <MessageItem
-                key={message._id}
-                message={message}
-                currentUserId={currentUserId}
-                onDelete={handleDeleteMessage}
-              />
-            ))}
+      <div className="flex-1 relative min-h-0">
+        <ScrollArea ref={scrollAreaRef} className="h-full w-full bg-muted/20">
+          {messages === undefined ? (
+            // Loading state
+            <div className="flex items-center justify-center h-full text-muted-foreground">
+              Loading messages...
+            </div>
+          ) : messages.length === 0 ? (
+            // Empty state - Requirement 5.2
+            <div className="flex flex-col items-center justify-center h-full text-center px-4">
+              <MessageSquare className="h-16 w-16 text-muted-foreground/50 mb-4" />
+              <p className="text-lg font-medium text-muted-foreground">
+                No messages yet
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Start the conversation by sending a message below
+              </p>
+            </div>
+          ) : (
+            // Message list
+            <div className="flex flex-col gap-1 py-4 px-4">
+              {messages.map((message) => (
+                <MessageItem
+                  key={message._id}
+                  message={message}
+                  currentUserId={currentUserId}
+                  onDelete={handleDeleteMessage}
+                />
+              ))}
+            </div>
+          )}
+          {/* Typing Indicator - Requirements 8.1, 8.4 */}
+          <TypingIndicator
+            conversationId={conversationId}
+            currentUserId={currentUserId}
+          />
+        </ScrollArea>
+
+        {/* New Messages Button - Requirements 10.2, 10.3 */}
+        {showNewMessagesButton && (
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
+            <Button
+              onClick={scrollToBottom}
+              variant="secondary"
+              size="sm"
+              className="shadow-lg pointer-events-auto"
+              aria-label="Scroll to new messages"
+            >
+              <ArrowDown className="h-4 w-4 mr-2" />
+              New messages
+            </Button>
           </div>
         )}
-        {/* Typing Indicator - Requirements 8.1, 8.4 */}
-        <TypingIndicator
-          conversationId={conversationId}
-          currentUserId={currentUserId}
-        />
-      </ScrollArea>
+      </div>
 
       {/* Message Input Area */}
-      <div className="p-4 bg-background border-t shrink-0">
+      <div className="p-4 bg-background border-t shrink-0 z-20 relative">
         <form onSubmit={handleSendMessage} className="flex gap-2">
           <Input
             type="text"
