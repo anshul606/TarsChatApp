@@ -10,11 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { MessageItem } from "@/components/message-item";
 import { PresenceBadge } from "@/components/presence-badge";
+import { TypingIndicator } from "@/components/typing-indicator";
 import { Send, MessageSquare } from "lucide-react";
 
 /**
  * ChatArea Component
- * Requirements: 3.1, 3.2, 5.2, 9.2
+ * Requirements: 3.1, 3.2, 5.2, 8.1, 8.2, 8.3, 8.4, 9.2
  *
  * Main message display and input area for a conversation.
  * Features:
@@ -24,6 +25,9 @@ import { Send, MessageSquare } from "lucide-react";
  * - Calls messages.send mutation on submit
  * - Displays empty state when conversation has no messages
  * - Calls conversations.markRead when conversation is opened
+ * - Debounced typing detection with automatic clear after 2 seconds
+ * - Clears typing status immediately on message send
+ * - Displays TypingIndicator component showing who is typing
  */
 
 interface ChatAreaProps {
@@ -34,6 +38,7 @@ interface ChatAreaProps {
 export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
   const [messageContent, setMessageContent] = useState("");
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Subscribe to messages for this conversation
   const messages = useQuery(api.messages.list, { conversationId });
@@ -43,6 +48,7 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
   const sendMessage = useMutation(api.messages.send);
   const deleteMessage = useMutation(api.messages.deleteMessage);
   const markRead = useMutation(api.conversations.markRead);
+  const updateTyping = useMutation(api.typing.update);
 
   // Mark conversation as read when opened or when new messages arrive
   useEffect(() => {
@@ -63,6 +69,43 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
     }
   }, [messages]);
 
+  // Cleanup typing timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Handle input change with typing detection
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setMessageContent(newValue);
+
+    // Only track typing if there's content
+    if (newValue.trim()) {
+      // Set typing status to true
+      updateTyping({ conversationId, isTyping: true });
+
+      // Clear existing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
+      // Set new timeout to clear typing after 2 seconds
+      typingTimeoutRef.current = setTimeout(() => {
+        updateTyping({ conversationId, isTyping: false });
+      }, 2000);
+    } else {
+      // Clear typing immediately if input is empty
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      updateTyping({ conversationId, isTyping: false });
+    }
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -70,6 +113,14 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
     if (!trimmedContent) return;
 
     try {
+      // Clear typing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
+      // Clear typing status immediately
+      await updateTyping({ conversationId, isTyping: false });
+
       await sendMessage({
         conversationId,
         content: trimmedContent,
@@ -187,6 +238,11 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
             ))}
           </div>
         )}
+        {/* Typing Indicator - Requirements 8.1, 8.4 */}
+        <TypingIndicator
+          conversationId={conversationId}
+          currentUserId={currentUserId}
+        />
       </ScrollArea>
 
       {/* Message Input Area */}
@@ -196,7 +252,7 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
             type="text"
             placeholder="Type a message..."
             value={messageContent}
-            onChange={(e) => setMessageContent(e.target.value)}
+            onChange={handleInputChange}
             className="flex-1"
           />
           <Button
