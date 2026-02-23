@@ -121,9 +121,9 @@ export default function Home() {
               }`}
             >
               {selectedConversationId ? (
-                <>
+                <div className="flex-1 flex flex-col overflow-hidden">
                   {/* Mobile back button */}
-                  <div className="md:hidden border-b px-4 py-3 flex items-center gap-3 bg-card">
+                  <div className="md:hidden border-b px-4 py-3 flex items-center gap-3 bg-card shrink-0">
                     <Button
                       variant="ghost"
                       size="icon"
@@ -134,11 +134,13 @@ export default function Home() {
                     </Button>
                     <span className="font-semibold">Back to conversations</span>
                   </div>
-                  <ChatArea
-                    conversationId={selectedConversationId}
-                    currentUserId={currentUser._id}
-                  />
-                </>
+                  <div className="flex-1 overflow-hidden">
+                    <ChatArea
+                      conversationId={selectedConversationId}
+                      currentUserId={currentUser._id}
+                    />
+                  </div>
+                </div>
               ) : (
                 <div className="flex-1 flex flex-col items-center justify-center bg-muted/20">
                   <MessageSquare className="h-20 w-20 text-muted-foreground/30 mb-4" />

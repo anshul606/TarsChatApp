@@ -68,7 +68,7 @@ export async function getUnreadCount(
     .withIndex("by_conversation_user", (q) =>
       q.eq("conversationId", conversationId).eq("userId", userId),
     )
-    .first();
+    .unique();
 
   const lastReadAt = readStatus?.lastReadAt || 0;
 
@@ -78,13 +78,11 @@ export async function getUnreadCount(
   const messages = await ctx.db
     .query("messages")
     .withIndex("by_conversation", (q) => q.eq("conversationId", conversationId))
+    .filter((q) => q.gt(q.field("createdAt"), lastReadAt))
+    .filter((q) => q.neq(q.field("senderId"), userId))
     .collect();
 
-  const unreadCount = messages.filter(
-    (msg) => msg.createdAt > lastReadAt && msg.senderId !== userId,
-  ).length;
-
-  return unreadCount;
+  return messages.length;
 }
 
 /**

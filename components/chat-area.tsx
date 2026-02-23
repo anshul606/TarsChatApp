@@ -55,13 +55,29 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
   const markRead = useMutation(api.conversations.markRead);
   const updateTyping = useMutation(api.typing.update);
 
-  // Mark conversation as read when opened (only on conversationId change)
+  // Mark conversation as read when opened
   useEffect(() => {
     if (conversationId) {
       markRead({ conversationId });
     }
+    // Only run when conversation changes, not when messages change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversationId]); // Only mark as read when conversation changes, not on every message
+  }, [conversationId]);
+
+  // Scroll to bottom when conversation is first opened or messages first load
+  useEffect(() => {
+    if (messages && messages.length > 0 && scrollAreaRef.current) {
+      const scrollContainer = scrollAreaRef.current.querySelector(
+        "[data-radix-scroll-area-viewport]",
+      );
+      if (scrollContainer) {
+        // Use setTimeout to ensure DOM is updated
+        setTimeout(() => {
+          scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        }, 100); // Increased timeout to ensure rendering is complete
+      }
+    }
+  }, [conversationId, messages]); // Run when conversation changes OR when messages load
 
   // Check if user is scrolled to bottom
   const checkIfAtBottom = () => {
@@ -80,8 +96,6 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
         // Hide button when user scrolls to bottom manually
         if (isBottom) {
           setShowNewMessagesButton(false);
-          // Mark messages as read when user scrolls to bottom
-          markRead({ conversationId });
         }
       }
     }
@@ -89,17 +103,24 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
 
   // Auto-scroll to bottom only when user is already at bottom
   useEffect(() => {
-    if (scrollAreaRef.current && isAtBottom) {
+    // Only scroll if we have messages and user is at bottom
+    if (
+      scrollAreaRef.current &&
+      isAtBottom &&
+      messages &&
+      messages.length > 0 &&
+      previousMessageCountRef.current > 0 && // Only if we had messages before (not initial load)
+      messages.length > previousMessageCountRef.current // Only if new messages arrived
+    ) {
       const scrollContainer = scrollAreaRef.current.querySelector(
         "[data-radix-scroll-area-viewport]",
       );
       if (scrollContainer) {
         scrollContainer.scrollTop = scrollContainer.scrollHeight;
-        // Mark as read when auto-scrolling to new messages
-        markRead({ conversationId });
       }
     }
-  }, [messages, isAtBottom, conversationId, markRead]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages?.length, isAtBottom]); // Removed conversationId
 
   // Show "New messages" button when new messages arrive while scrolled up
   useEffect(() => {
@@ -215,8 +236,6 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
           behavior: "smooth",
         });
         setShowNewMessagesButton(false);
-        // Mark messages as read when user clicks to view new messages
-        markRead({ conversationId });
       }
     }
   };
@@ -334,6 +353,17 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
             // Loading state
             <div className="flex items-center justify-center h-full text-muted-foreground">
               Loading messages...
+            </div>
+          ) : messages === null ? (
+            // Conversation deleted
+            <div className="flex flex-col items-center justify-center h-full text-center px-4">
+              <MessageSquare className="h-16 w-16 text-muted-foreground/50 mb-4" />
+              <p className="text-lg font-medium text-muted-foreground">
+                Conversation not found
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                This conversation may have been deleted
+              </p>
             </div>
           ) : messages.length === 0 ? (
             // Empty state - Requirement 5.2

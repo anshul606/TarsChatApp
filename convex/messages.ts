@@ -15,7 +15,7 @@ export const list = query({
 
     // Verify user is participant in the conversation
     const conversation = await ctx.db.get(args.conversationId);
-    if (!conversation) throw new Error("Conversation not found");
+    if (!conversation) return null; // Return null instead of throwing error
 
     const user = await getUserByClerkId(ctx, identity.subject);
     if (!conversation.participants.includes(user._id)) {
