@@ -1,0 +1,19 @@
+{
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "regions": ["iad1"],
+  "env": {
+    "NEXT_PUBLIC_CONVEX_URL": "@convex_url",
+    "CONVEX_DEPLOYMENT": "@convex_deployment",
+    "NEXT_PUBLIC_CONVEX_SITE_URL": "@convex_site_url",
+    "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": "@clerk_publishable_key",
+    "CLERK_SECRET_KEY": "@clerk_secret_key",
+    "CLERK_WEBHOOK_SECRET": "@clerk_webhook_secret",
+    "NEXT_PUBLIC_CLERK_SIGN_IN_URL": "/sign-in",
+    "NEXT_PUBLIC_CLERK_SIGN_UP_URL": "/sign-up",
+    "NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL": "/",
+    "NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL": "/"
+  }
+}

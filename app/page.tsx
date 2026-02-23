@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, MessageSquare } from "lucide-react";
+import { useUnreadCount } from "@/hooks/use-unread-count";
 
 export default function Home() {
   const { isLoaded, isSignedIn } = useAuth();
@@ -20,6 +21,9 @@ export default function Home() {
     Id<"conversations"> | undefined
   >();
   const [showMobileChat, setShowMobileChat] = useState(false);
+
+  // Track unread conversations and update favicon
+  useUnreadCount();
 
   // Automatically sync user on mount (only after Clerk is loaded and user is signed in)
   useEffect(() => {
