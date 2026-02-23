@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as autoCreateDeveloperChat from "../autoCreateDeveloperChat.js";
 import type * as conversations from "../conversations.js";
 import type * as helpers from "../helpers.js";
 import type * as http from "../http.js";
@@ -26,6 +27,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  autoCreateDeveloperChat: typeof autoCreateDeveloperChat;
   conversations: typeof conversations;
   helpers: typeof helpers;
   http: typeof http;

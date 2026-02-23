@@ -58,9 +58,24 @@ export const update = mutation({
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthorized");
 
-    const user = await getUserByClerkId(ctx, identity.subject);
+    // Silently return if not authenticated (happens during logout)
+    if (!identity) {
+      console.log("No identity found, skipping typing update");
+      return;
+    }
+
+    // Try to get user, return silently if not found yet (user still syncing)
+    let user;
+    try {
+      user = await getUserByClerkId(ctx, identity.subject);
+    } catch (error) {
+      console.log(
+        "User not synced yet, skipping typing update:",
+        identity.subject,
+      );
+      return;
+    }
 
     if (args.isTyping) {
       // Upsert typing record

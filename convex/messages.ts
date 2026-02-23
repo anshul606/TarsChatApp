@@ -11,13 +11,25 @@ export const list = query({
   args: { conversationId: v.id("conversations") },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthorized");
+
+    // Return null if not authenticated (happens during logout)
+    if (!identity) {
+      return null;
+    }
 
     // Verify user is participant in the conversation
     const conversation = await ctx.db.get(args.conversationId);
     if (!conversation) return null; // Return null instead of throwing error
 
-    const user = await getUserByClerkId(ctx, identity.subject);
+    // Try to get user, return null if not found yet (user still syncing)
+    let user;
+    try {
+      user = await getUserByClerkId(ctx, identity.subject);
+    } catch (error) {
+      console.log("User not synced yet:", identity.subject);
+      return null;
+    }
+
     // Return null if user is not a participant (instead of throwing error)
     if (!conversation.participants.includes(user._id)) {
       return null;

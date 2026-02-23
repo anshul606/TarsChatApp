@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { internalMutation, query } from "./_generated/server";
 import { QueryCtx } from "./_generated/server";
+import { internal } from "./_generated/api";
 
 // Internal mutation to create/update user (called by Clerk webhook)
 export const upsertFromClerk = internalMutation({
@@ -24,10 +25,27 @@ export const upsertFromClerk = internalMutation({
       });
       return existing._id;
     } else {
-      return await ctx.db.insert("users", {
+      const userId = await ctx.db.insert("users", {
         ...args,
         createdAt: Date.now(),
       });
+
+      console.log(`[UserSync] Created new user: ${userId} (${args.email})`);
+
+      // Automatically create conversation with developer for new users
+      await ctx.scheduler.runAfter(
+        0,
+        internal.autoCreateDeveloperChat.createDeveloperConversation,
+        {
+          userId,
+        },
+      );
+
+      console.log(
+        `[UserSync] Scheduled auto-create developer chat for user: ${userId}`,
+      );
+
+      return userId;
     }
   },
 });

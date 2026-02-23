@@ -24,7 +24,12 @@ export const update = mutation({
   args: { isOnline: v.boolean() },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthorized");
+
+    // Silently return if not authenticated (happens during logout)
+    if (!identity) {
+      console.log("No identity found, skipping presence update");
+      return;
+    }
 
     // Get user by Clerk ID
     const user = await ctx.db
@@ -32,7 +37,14 @@ export const update = mutation({
       .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
       .first();
 
-    if (!user) throw new Error("User not found");
+    // If user not synced yet, silently return (user will be synced via webhook)
+    if (!user) {
+      console.log(
+        "User not synced yet, skipping presence update:",
+        identity.subject,
+      );
+      return;
+    }
 
     // Check if presence record exists
     const existing = await ctx.db
