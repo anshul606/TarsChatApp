@@ -11,6 +11,7 @@
 import type * as conversations from "../conversations.js";
 import type * as helpers from "../helpers.js";
 import type * as http from "../http.js";
+import type * as messages from "../messages.js";
 import type * as syncCurrentUser from "../syncCurrentUser.js";
 import type * as users from "../users.js";
 
@@ -24,6 +25,7 @@ declare const fullApi: ApiFromModules<{
   conversations: typeof conversations;
   helpers: typeof helpers;
   http: typeof http;
+  messages: typeof messages;
   syncCurrentUser: typeof syncCurrentUser;
   users: typeof users;
 }>;
