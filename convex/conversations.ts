@@ -88,7 +88,15 @@ export const list = query({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Unauthorized");
 
-    const user = await getUserByClerkId(ctx, identity.subject);
+    // Try to get user, return empty array if not found yet (user still syncing)
+    let user;
+    try {
+      user = await getUserByClerkId(ctx, identity.subject);
+    } catch (error) {
+      // User not synced yet, return empty array
+      console.log("User not synced yet:", identity.subject);
+      return [];
+    }
 
     // Query all conversations where the user is a participant
     // Note: We collect all conversations and filter in memory because
@@ -182,7 +190,15 @@ export const get = query({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Unauthorized");
 
-    const user = await getUserByClerkId(ctx, identity.subject);
+    // Try to get user, return null if not found yet (user still syncing)
+    let user;
+    try {
+      user = await getUserByClerkId(ctx, identity.subject);
+    } catch (error) {
+      // User not synced yet
+      console.log("User not synced yet:", identity.subject);
+      return null;
+    }
 
     const conversation = await ctx.db.get(args.conversationId);
     if (!conversation) return null;
