@@ -47,6 +47,21 @@ export const list = query({
   },
 });
 
+// Query to get current user
+export const getCurrentUser = query({
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return null;
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .first();
+
+    return user || null;
+  },
+});
+
 // Helper function to get user by Clerk ID
 export async function getUserByClerkId(ctx: QueryCtx, clerkId: string) {
   const user = await ctx.db

@@ -4,6 +4,7 @@ import { Id } from "@/convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { formatMessageTimestamp } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { Trash2 } from "lucide-react";
 
 /**
@@ -52,53 +53,87 @@ export function MessageItem({
     .slice(0, 2);
 
   return (
-    <div className="flex gap-3 px-4 py-2 hover:bg-accent/50 group">
-      {/* Sender Avatar */}
-      <Avatar size="default">
-        {message.sender?.imageUrl && (
-          <AvatarImage src={message.sender.imageUrl} alt={senderName} />
-        )}
-        <AvatarFallback>{senderInitials}</AvatarFallback>
-      </Avatar>
+    <div
+      className={cn(
+        "flex gap-2 px-2",
+        isOwnMessage ? "justify-end" : "justify-start",
+      )}
+    >
+      {/* Avatar for other users (left side) */}
+      {!isOwnMessage && (
+        <Avatar className="h-8 w-8 shrink-0 mt-1">
+          {message.sender?.imageUrl && (
+            <AvatarImage src={message.sender.imageUrl} alt={senderName} />
+          )}
+          <AvatarFallback className="text-xs">{senderInitials}</AvatarFallback>
+        </Avatar>
+      )}
 
-      {/* Message Content */}
-      <div className="flex-1 min-w-0">
-        {/* Sender Name and Timestamp */}
-        <div className="flex items-baseline gap-2 mb-1">
-          <span className="font-semibold text-sm">{senderName}</span>
-          <span className="text-xs text-muted-foreground">
+      {/* Message Bubble */}
+      <div
+        className={cn(
+          "flex flex-col max-w-[70%] group",
+          isOwnMessage ? "items-end" : "items-start",
+        )}
+      >
+        {/* Sender name (only for other users) */}
+        {!isOwnMessage && (
+          <span className="text-xs font-medium text-muted-foreground mb-1 px-3">
+            {senderName}
+          </span>
+        )}
+
+        {/* Message content bubble */}
+        <div
+          className={cn(
+            "rounded-2xl px-3 py-2 relative",
+            isOwnMessage
+              ? "bg-primary text-primary-foreground rounded-br-sm"
+              : "bg-muted rounded-bl-sm",
+          )}
+        >
+          {message.isDeleted ? (
+            <p className="text-sm italic opacity-70">
+              This message was deleted
+            </p>
+          ) : (
+            <p className="text-sm whitespace-pre-wrap break-words">
+              {message.content}
+            </p>
+          )}
+
+          {/* Timestamp */}
+          <span
+            className={cn(
+              "text-[10px] mt-1 block",
+              isOwnMessage
+                ? "text-primary-foreground/70"
+                : "text-muted-foreground",
+            )}
+          >
             {formatMessageTimestamp(message.createdAt)}
           </span>
+
+          {/* Delete Button */}
+          {isOwnMessage && !message.isDeleted && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onDelete(message._id)}
+              className={cn(
+                "absolute -top-2 -right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity",
+                "bg-background border shadow-sm hover:bg-accent",
+              )}
+              aria-label="Delete message"
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          )}
         </div>
-
-        {/* Message Text or Deletion Notice */}
-        {message.isDeleted ? (
-          <p className="text-sm text-muted-foreground italic">
-            This message was deleted
-          </p>
-        ) : (
-          <p className="text-sm whitespace-pre-wrap wrap-break-word">
-            {message.content}
-          </p>
-        )}
-
-        {/* Reactions Placeholder - Requirements: 12.4 */}
-        {/* TODO: Implement reactions display when reactions API is available */}
-        {/* This will show reaction counts below the message */}
       </div>
 
-      {/* Delete Button - Requirements: 11.1, 11.2, 11.3 */}
-      {isOwnMessage && !message.isDeleted && (
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          onClick={() => onDelete(message._id)}
-          className="opacity-0 group-hover:opacity-100 transition-opacity"
-          aria-label="Delete message"
-        >
-          <Trash2 className="size-4 text-muted-foreground hover:text-destructive" />
-        </Button>
-      )}
+      {/* Spacer for own messages to maintain alignment */}
+      {isOwnMessage && <div className="w-8 shrink-0" />}
     </div>
   );
 }

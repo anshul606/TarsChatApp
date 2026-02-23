@@ -88,7 +88,7 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
   };
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full w-full flex-col bg-muted/30">
       {/* Messages Area */}
       <ScrollArea ref={scrollAreaRef} className="flex-1">
         {messages === undefined ? (
@@ -107,7 +107,7 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
           </div>
         ) : (
           // Message list
-          <div className="flex flex-col">
+          <div className="flex flex-col gap-2 py-4">
             {messages.map((message) => (
               <MessageItem
                 key={message._id}
@@ -121,7 +121,7 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
       </ScrollArea>
 
       {/* Message Input Area */}
-      <div className="p-4 border-t">
+      <div className="p-4 bg-background border-t shrink-0">
         <form onSubmit={handleSendMessage} className="flex gap-2">
           <Input
             type="text"

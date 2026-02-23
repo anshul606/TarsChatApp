@@ -1,10 +1,9 @@
 "use client";
 
-import { UserProfileDisplay } from "@/components/user-profile-header";
 import { UserButton, useAuth } from "@clerk/nextjs";
-import { UserDirectory } from "@/components/user-directory";
 import { ConversationSidebar } from "@/components/conversation-sidebar";
-import { useMutation } from "convex/react";
+import { ChatArea } from "@/components/chat-area";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useEffect, useState } from "react";
 import { Id } from "@/convex/_generated/dataModel";
@@ -12,6 +11,7 @@ import { Id } from "@/convex/_generated/dataModel";
 export default function Home() {
   const { isLoaded, isSignedIn } = useAuth();
   const syncUser = useMutation(api.syncCurrentUser.syncCurrentUser);
+  const currentUser = useQuery(api.users.getCurrentUser);
   const [isSynced, setIsSynced] = useState(false);
   const [selectedConversationId, setSelectedConversationId] = useState<
     Id<"conversations"> | undefined
@@ -38,26 +38,21 @@ export default function Home() {
     syncUserData();
   }, [isLoaded, isSignedIn, syncUser]);
 
-  const handleConversationCreated = (conversationId: Id<"conversations">) => {
-    setSelectedConversationId(conversationId);
-  };
-
   const handleConversationSelect = (conversationId: Id<"conversations">) => {
     setSelectedConversationId(conversationId);
   };
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="border-b">
+    <div className="flex h-screen flex-col">
+      <header className="border-b shrink-0">
         <div className="flex h-16 items-center px-4 gap-4">
           <h1 className="text-xl font-semibold">Realtime Messaging App</h1>
-          <div className="ml-auto flex items-center gap-4">
-            <UserProfileDisplay />
+          <div className="ml-auto">
             <UserButton afterSignOutUrl="/sign-in" />
           </div>
         </div>
       </header>
-      <main className="flex-1 flex">
+      <main className="flex-1 flex overflow-hidden">
         {!isLoaded ? (
           <div className="flex-1 flex items-center justify-center">
             <p className="text-muted-foreground">Loading...</p>
@@ -66,32 +61,26 @@ export default function Home() {
           <div className="flex-1 flex items-center justify-center">
             <p className="text-muted-foreground">Please sign in to continue</p>
           </div>
-        ) : isSynced ? (
+        ) : isSynced && currentUser ? (
           <>
-            <div className="w-80 border-r">
-              <div className="h-full flex flex-col">
-                <div className="flex-1 overflow-hidden">
-                  <ConversationSidebar
-                    selectedConversationId={selectedConversationId}
-                    onConversationSelect={handleConversationSelect}
-                  />
-                </div>
-                <div className="border-t">
-                  <UserDirectory
-                    onConversationCreated={handleConversationCreated}
-                  />
-                </div>
-              </div>
+            <div className="w-80 border-r flex flex-col shrink-0 h-full">
+              <ConversationSidebar
+                selectedConversationId={selectedConversationId}
+                onConversationSelect={handleConversationSelect}
+              />
             </div>
-            <div className="flex-1 flex items-center justify-center">
+            <div className="flex-1 flex overflow-hidden">
               {selectedConversationId ? (
-                <p className="text-muted-foreground">
-                  Chat area will be implemented in the next task
-                </p>
+                <ChatArea
+                  conversationId={selectedConversationId}
+                  currentUserId={currentUser._id}
+                />
               ) : (
-                <p className="text-muted-foreground">
-                  Select a conversation or start a new one
-                </p>
+                <div className="flex-1 flex items-center justify-center">
+                  <p className="text-muted-foreground">
+                    Select a conversation or start a new one
+                  </p>
+                </div>
               )}
             </div>
           </>
