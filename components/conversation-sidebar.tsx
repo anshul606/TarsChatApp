@@ -357,6 +357,18 @@ export function ConversationSidebar({
                                   : conversation.otherParticipants[0]?.name ||
                                     "Unknown User"}
                               </p>
+                              {/* Developer Badge */}
+                              {!conversation.isGroup &&
+                                conversation.otherParticipants[0]?.email ===
+                                  "anshulbansal2406@gmail.com" && (
+                                  <Badge
+                                    variant="default"
+                                    className="gap-1 shrink-0 bg-gradient-to-r from-purple-500 to-pink-500"
+                                  >
+                                    <Crown className="h-3 w-3" />
+                                    Developer
+                                  </Badge>
+                                )}
                               {getUserRole(conversation) === "owner" && (
                                 <Badge
                                   variant="default"

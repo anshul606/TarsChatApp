@@ -134,6 +134,29 @@ export const list = query({
     // Sort by lastMessageAt descending (most recent first)
     enrichedConversations.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
 
+    // Pin developer chat to top (anshulbansal2406@gmail.com)
+    const DEVELOPER_EMAIL = "anshulbansal2406@gmail.com";
+    const developerUser = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("email"), DEVELOPER_EMAIL))
+      .first();
+
+    if (developerUser) {
+      // Move developer's direct chat to the top
+      const developerChatIndex = enrichedConversations.findIndex(
+        (conv) =>
+          !conv.isGroup && conv.participants.includes(developerUser._id),
+      );
+
+      if (developerChatIndex > 0) {
+        const [developerChat] = enrichedConversations.splice(
+          developerChatIndex,
+          1,
+        );
+        enrichedConversations.unshift(developerChat);
+      }
+    }
+
     return enrichedConversations;
   },
 });

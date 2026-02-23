@@ -32,8 +32,10 @@ import {
   AlertCircle,
   RefreshCw,
   Users,
+  Crown,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 /**
@@ -625,9 +627,21 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h2 className="font-semibold text-lg truncate">
-                    {conversation.otherParticipants[0].name}
-                  </h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="font-semibold text-lg truncate">
+                      {conversation.otherParticipants[0].name}
+                    </h2>
+                    {conversation.otherParticipants[0].email ===
+                      "anshulbansal2406@gmail.com" && (
+                      <Badge
+                        variant="default"
+                        className="gap-1 shrink-0 bg-gradient-to-r from-purple-500 to-pink-500"
+                      >
+                        <Crown className="h-3 w-3" />
+                        Developer
+                      </Badge>
+                    )}
+                  </div>
                   <p className="text-sm text-muted-foreground truncate">
                     {conversation.otherParticipants[0].email}
                   </p>
