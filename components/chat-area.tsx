@@ -557,27 +557,24 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
     <div className="flex h-full w-full flex-col">
       {/* Chat Header */}
       {conversation && (
-        <div className="border-b bg-card/80 backdrop-blur-xl supports-[backdrop-filter]:bg-card/60 px-6 py-4 shrink-0 z-10 shadow-sm">
+        <div className="border-b bg-background px-6 py-4 shrink-0 z-10">
           <div className="flex items-center gap-3">
             {conversation.isGroup ? (
               <>
                 <div className="relative">
-                  <Avatar className="h-10 w-10">
-                    <AvatarFallback className="bg-primary/10 text-primary">
-                      <MessageSquare className="h-5 w-5" />
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="h-12 w-12 rounded-full bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center">
+                    <Users className="h-5 w-5 text-white" />
+                  </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h2 className="font-semibold text-lg truncate">
+                  <h2 className="font-semibold text-base truncate">
                     {conversation.groupName}
                   </h2>
                   <button
                     onClick={() => setShowMemberListDialog(true)}
-                    className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
                     aria-label="View group members"
                   >
-                    <Users className="h-3 w-3" />
                     {conversation.participants.length} members
                   </button>
                 </div>
@@ -590,8 +587,9 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
                     onClick={() => setShowAddMemberDialog(true)}
                     title="Add Member"
                     aria-label="Add member to group"
+                    className="h-9 w-9 rounded-lg"
                   >
-                    <UserPlus className="h-5 w-5" />
+                    <UserPlus className="h-4 w-4" />
                   </Button>
                 )}
                 <GroupManagementMenu
@@ -608,14 +606,14 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
             ) : conversation.otherParticipants[0] ? (
               <>
                 <div className="relative">
-                  <Avatar className="h-10 w-10">
+                  <Avatar className="h-12 w-12 border-2 border-background">
                     {conversation.otherParticipants[0].imageUrl && (
                       <AvatarImage
                         src={conversation.otherParticipants[0].imageUrl}
                         alt={conversation.otherParticipants[0].name}
                       />
                     )}
-                    <AvatarFallback>
+                    <AvatarFallback className="bg-gradient-to-br from-orange-400 to-orange-500 text-white font-medium text-sm">
                       {getInitials(conversation.otherParticipants[0].name)}
                     </AvatarFallback>
                   </Avatar>
@@ -628,21 +626,21 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <h2 className="font-semibold text-lg truncate">
+                    <h2 className="font-semibold text-base truncate">
                       {conversation.otherParticipants[0].name}
                     </h2>
                     {conversation.otherParticipants[0].email ===
                       "anshulbansal2406@gmail.com" && (
                       <Badge
                         variant="default"
-                        className="gap-1 shrink-0 bg-gradient-to-r from-purple-500 to-pink-500"
+                        className="gap-1 shrink-0 bg-linear-to-r from-purple-500 to-pink-500 text-xs px-1.5 py-0"
                       >
-                        <Crown className="h-3 w-3" />
-                        Developer
+                        <Crown className="h-2.5 w-2.5" />
+                        Dev
                       </Badge>
                     )}
                   </div>
-                  <p className="text-sm text-muted-foreground truncate">
+                  <p className="text-xs text-muted-foreground truncate">
                     {conversation.otherParticipants[0].email}
                   </p>
                 </div>
@@ -674,7 +672,7 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
 
         <ScrollArea
           ref={scrollAreaRef}
-          className="h-full w-full bg-gradient-to-b from-muted/5 via-muted/10 to-muted/5"
+          className="h-full w-full bg-muted/30"
           role="log"
           aria-label="Message history"
         >
@@ -714,8 +712,8 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
             // Empty state - Requirement 5.2
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
               <div className="relative mb-6">
-                <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full" />
-                <MessageSquare className="relative h-20 w-20 text-primary/60" />
+                <div className="absolute inset-0 bg-orange-500/20 blur-3xl rounded-full" />
+                <MessageSquare className="relative h-20 w-20 text-orange-500/60" />
               </div>
               <p className="text-lg font-medium text-muted-foreground">
                 No messages yet
@@ -726,7 +724,7 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
             </div>
           ) : (
             // Message list
-            <div className="flex flex-col gap-1 py-4 px-4">
+            <div className="flex flex-col py-3">
               {allMessages.map((message) => (
                 <MessageItem
                   key={message._id}
@@ -764,14 +762,14 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
       </div>
 
       {/* Message Input Area */}
-      <div className="p-4 bg-card/80 backdrop-blur-xl supports-[backdrop-filter]:bg-card/60 border-t shrink-0 z-20 relative shadow-sm">
+      <div className="px-6 py-4 bg-background border-t shrink-0 z-20 relative">
         {/* Failed Messages Display */}
         {failedMessages.length > 0 && (
           <div className="mb-3 space-y-2">
             {failedMessages.map((failedMsg) => (
               <div
                 key={failedMsg.id}
-                className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg"
+                className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-xl"
               >
                 <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
@@ -786,7 +784,7 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
                   variant="ghost"
                   size="sm"
                   onClick={() => handleRetryMessage(failedMsg)}
-                  className="shrink-0 h-8"
+                  className="shrink-0 h-8 rounded-lg"
                 >
                   <RefreshCw className="h-3 w-3 mr-1" />
                   Retry
@@ -796,29 +794,32 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
           </div>
         )}
 
-        <form onSubmit={handleSendMessage} className="flex gap-2">
+        <form onSubmit={handleSendMessage} className="flex items-center gap-3">
           <EmojiPickerInput onEmojiSelect={handleEmojiSelect} />
-          <Input
-            type="text"
-            placeholder="Type a message..."
-            value={messageContent}
-            onChange={handleInputChange}
-            className="flex-1"
-            disabled={isSending}
-            aria-label="Message input"
-            aria-describedby="message-input-description"
-          />
+          <div className="flex-1 relative">
+            <Input
+              type="text"
+              placeholder="Type a message..."
+              value={messageContent}
+              onChange={handleInputChange}
+              className="flex-1 h-12 rounded-full bg-muted/50 border-0 px-5 pr-14 focus-visible:ring-1 focus-visible:ring-orange-500/20 text-sm placeholder:text-muted-foreground/60"
+              disabled={isSending}
+              aria-label="Message input"
+              aria-describedby="message-input-description"
+            />
+            <Button
+              type="submit"
+              size="icon"
+              disabled={!messageContent.trim() || isSending}
+              aria-label="Send message"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-orange-500 hover:bg-orange-600 shadow-sm"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
           <span id="message-input-description" className="sr-only">
             Type your message and press Enter or click Send to send it
           </span>
-          <Button
-            type="submit"
-            size="icon"
-            disabled={!messageContent.trim() || isSending}
-            aria-label="Send message"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
         </form>
       </div>
 

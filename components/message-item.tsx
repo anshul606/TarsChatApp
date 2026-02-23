@@ -206,23 +206,25 @@ export function MessageItem({
     <div
       data-message-id={message._id}
       className={cn(
-        "flex gap-2 px-2 group/message",
+        "flex gap-2.5 px-6 py-0.5 group/message",
         isOwnMessage ? "justify-end" : "justify-start",
       )}
     >
       {/* Avatar for other users (left side) */}
       {!isOwnMessage && (
-        <Avatar className="h-8 w-8 shrink-0 mt-1">
+        <Avatar className="h-8 w-8 shrink-0 mt-0.5">
           {message.sender?.imageUrl && (
             <AvatarImage src={message.sender.imageUrl} alt={senderName} />
           )}
-          <AvatarFallback className="text-xs">{senderInitials}</AvatarFallback>
+          <AvatarFallback className="text-xs bg-gradient-to-br from-orange-400 to-orange-500 text-white font-medium">
+            {senderInitials}
+          </AvatarFallback>
         </Avatar>
       )}
 
       {/* Action Buttons - Left side for own messages */}
       {isOwnMessage && !message.isDeleted && !message.isOptimistic && (
-        <div className="flex items-center gap-1 opacity-0 group-hover/message:opacity-100 transition-opacity self-center">
+        <div className="flex items-center gap-0.5 opacity-0 group-hover/message:opacity-100 transition-opacity self-center">
           <Button
             variant="ghost"
             size="icon"
@@ -231,11 +233,11 @@ export function MessageItem({
               e.stopPropagation();
               setShowReactionPicker(!showReactionPicker);
             }}
-            className="h-8 w-8 hover:bg-accent"
+            className="h-7 w-7 hover:bg-accent rounded-md"
             aria-label="Add reaction"
             title="Add reaction"
           >
-            <Smile className="h-4 w-4" />
+            <Smile className="h-3.5 w-3.5" />
           </Button>
           <Button
             variant="ghost"
@@ -246,11 +248,11 @@ export function MessageItem({
               e.stopPropagation();
               onDelete(message._id);
             }}
-            className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+            className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive rounded-md"
             aria-label="Delete message"
             title="Delete message"
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-3.5 w-3.5" />
           </Button>
         </div>
       )}
@@ -258,13 +260,13 @@ export function MessageItem({
       {/* Message Bubble */}
       <div
         className={cn(
-          "flex flex-col max-w-[70%]",
+          "flex flex-col max-w-[60%]",
           isOwnMessage ? "items-end" : "items-start",
         )}
       >
-        {/* Sender name (only for other users) */}
-        {!isOwnMessage && (
-          <span className="text-xs font-medium text-muted-foreground mb-1 px-3">
+        {/* Sender name for group messages */}
+        {!isOwnMessage && isGroupConversation && (
+          <span className="text-xs font-medium text-foreground mb-0.5 px-0.5">
             {senderName}
           </span>
         )}
@@ -273,10 +275,10 @@ export function MessageItem({
         <div className="relative">
           <div
             className={cn(
-              "rounded-2xl px-4 py-2.5 relative shadow-sm",
+              "rounded-2xl px-3.5 py-2 relative",
               isOwnMessage
-                ? "bg-gradient-to-br from-primary to-primary/90 text-primary-foreground rounded-br-md shadow-primary/20"
-                : "bg-card border border-border/50 rounded-bl-md",
+                ? "bg-muted text-foreground"
+                : "bg-orange-100 dark:bg-orange-950/20 text-foreground",
               message.isOptimistic && "opacity-70",
             )}
           >
@@ -285,36 +287,10 @@ export function MessageItem({
                 This message was deleted
               </p>
             ) : (
-              <p className="text-sm whitespace-pre-wrap wrap-break-word">
+              <p className="text-[13px] leading-relaxed whitespace-pre-wrap wrap-break-word">
                 {message.content}
               </p>
             )}
-
-            {/* Timestamp and Read Receipt Ticks */}
-            <div className="flex items-center gap-1 mt-1">
-              <span
-                className={cn(
-                  "text-[10px]",
-                  isOwnMessage
-                    ? "text-primary-foreground/70"
-                    : "text-muted-foreground",
-                )}
-              >
-                {formatMessageTimestamp(message.createdAt)}
-              </span>
-              {/* Read Receipt Ticks - Requirements: 10.2, 10.3, 10.4, 11.5, 12.5 */}
-              {isOwnMessage &&
-                !message.isOptimistic &&
-                !message.isDeleted &&
-                tickStatus && (
-                  <ReadReceiptTicks
-                    status={tickStatus}
-                    className={
-                      isOwnMessage ? "text-primary-foreground/70" : undefined
-                    }
-                  />
-                )}
-            </div>
           </div>
 
           {/* Reaction Picker */}
@@ -349,27 +325,44 @@ export function MessageItem({
                     key={emoji}
                     onClick={() => handleReactionClick(emoji)}
                     className={cn(
-                      "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs",
+                      "inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm",
                       "border transition-colors",
                       hasReacted
-                        ? "bg-primary/10 border-primary text-primary font-medium"
+                        ? "bg-orange-50 dark:bg-orange-950/30 border-orange-400 text-orange-600 dark:text-orange-400 font-medium"
                         : "bg-background border-border hover:bg-accent",
                     )}
                     aria-label={`${emoji} reaction, ${data.count} ${data.count === 1 ? "person" : "people"}`}
                   >
-                    <span>{emoji}</span>
-                    <span className="text-[10px]">{data.count}</span>
+                    <span className="text-sm">{emoji}</span>
+                    <span className="text-xs">{data.count}</span>
                   </button>
                 );
               })}
             </div>
           )}
         </div>
+
+        {/* Timestamp and read receipts below bubble */}
+        <div className="flex items-center gap-1 mt-0.5 px-0.5">
+          <span className="text-[10px] text-muted-foreground">
+            {formatMessageTimestamp(message.createdAt)}
+          </span>
+          {/* Read Receipt Ticks */}
+          {isOwnMessage &&
+            !message.isOptimistic &&
+            !message.isDeleted &&
+            tickStatus && (
+              <ReadReceiptTicks
+                status={tickStatus}
+                className="text-muted-foreground"
+              />
+            )}
+        </div>
       </div>
 
       {/* Action Buttons - Right side for received messages */}
       {!isOwnMessage && !message.isDeleted && !message.isOptimistic && (
-        <div className="flex items-center gap-1 opacity-0 group-hover/message:opacity-100 transition-opacity self-center">
+        <div className="flex items-center gap-0.5 opacity-0 group-hover/message:opacity-100 transition-opacity self-center">
           <Button
             variant="ghost"
             size="icon"
@@ -378,11 +371,11 @@ export function MessageItem({
               e.stopPropagation();
               setShowReactionPicker(!showReactionPicker);
             }}
-            className="h-8 w-8 hover:bg-accent"
+            className="h-7 w-7 hover:bg-accent rounded-md"
             aria-label="Add reaction"
             title="Add reaction"
           >
-            <Smile className="h-4 w-4" />
+            <Smile className="h-3.5 w-3.5" />
           </Button>
         </div>
       )}

@@ -167,7 +167,7 @@ export function CreateGroupDialog({
                           role="checkbox"
                           aria-checked={isSelected}
                           tabIndex={0}
-                          className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary"
+                          className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-500"
                           onClick={() => handleUserToggle(user._id)}
                           onKeyDown={(e) => {
                             if (e.key === "Enter" || e.key === " ") {

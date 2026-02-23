@@ -112,27 +112,26 @@ export default function Home() {
       {/* Skip to main content link for keyboard users */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-orange-500 focus:text-white focus:rounded-md"
       >
         Skip to main content
       </a>
 
-      <header
-        className="border-b bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 shadow-sm shrink-0"
-        role="banner"
-      >
+      <header className="border-b bg-background shrink-0" role="banner">
         <div className="flex h-16 items-center px-6 gap-4">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary via-primary to-primary/70 flex items-center justify-center shadow-lg shadow-primary/20">
-              <MessageSquare className="h-5 w-5 text-primary-foreground" />
+            <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center">
+              <MessageSquare className="h-5 w-5 text-white" />
             </div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
+            <h1 className="text-xl font-semibold text-foreground">
               Tars Chat App
             </h1>
           </div>
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-3">
             <ThemeToggle />
-            <UserButton />
+            <div className="scale-110">
+              <UserButton />
+            </div>
           </div>
         </div>
       </header>
@@ -144,7 +143,7 @@ export default function Home() {
         {!isLoaded ? (
           <div className="flex-1 flex items-center justify-center">
             <div className="flex flex-col items-center gap-3">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary/30 border-t-primary" />
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-orange-500/30 border-t-orange-500" />
               <p className="text-muted-foreground">Loading...</p>
             </div>
           </div>
@@ -201,8 +200,8 @@ export default function Home() {
               ) : (
                 <div className="flex-1 flex flex-col items-center justify-center bg-muted/10">
                   <div className="relative mb-6">
-                    <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full" />
-                    <MessageSquare className="relative h-24 w-24 text-primary/70" />
+                    <div className="absolute inset-0 bg-orange-500/20 blur-3xl rounded-full" />
+                    <MessageSquare className="relative h-24 w-24 text-orange-500/70" />
                   </div>
                   <h2 className="text-2xl font-semibold mb-2 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
                     Welcome to Tars Chat
@@ -218,7 +217,7 @@ export default function Home() {
         ) : (
           <div className="flex-1 flex items-center justify-center">
             <div className="flex flex-col items-center gap-3">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary/30 border-t-primary" />
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-orange-500/30 border-t-orange-500" />
               <p className="text-muted-foreground">Loading...</p>
             </div>
           </div>

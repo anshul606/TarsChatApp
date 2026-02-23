@@ -160,43 +160,30 @@ export function ConversationSidebar({
 
   return (
     <div className="flex h-full w-full flex-col bg-background">
-      {/* Header with Search */}
-      <div className="p-4 border-b space-y-3 shrink-0">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <MessageSquare className="h-5 w-5" />
-            Messages
-          </h2>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowCreateGroupDialog(true)}
-              className="h-8 w-8"
-              title="Create Group"
-              aria-label="Create new group chat"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowUserSearch(!showUserSearch)}
-              className="h-8 w-8"
-              title="Find People"
-              aria-label={
-                showUserSearch ? "Close user search" : "Find people to message"
-              }
-              aria-expanded={showUserSearch}
-            >
-              {showUserSearch ? (
-                <X className="h-4 w-4" />
-              ) : (
-                <UserPlus className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
+      {/* Header */}
+      <div className="px-6 pt-6 pb-4 shrink-0">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-semibold">Messages</h2>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowUserSearch(!showUserSearch)}
+            className="h-9 w-9 rounded-lg hover:bg-muted"
+            title="Search"
+            aria-label="Search conversations"
+          >
+            <Search className="h-4 w-4" />
+          </Button>
         </div>
+
+        {/* CTA Button */}
+        <Button
+          onClick={() => setShowCreateGroupDialog(true)}
+          className="w-full h-11 rounded-xl bg-orange-500 hover:bg-orange-600 text-white shadow-sm mb-4"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Create group
+        </Button>
 
         {showUserSearch && (
           <Input
@@ -204,7 +191,7 @@ export function ConversationSidebar({
             placeholder="Search users..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full"
+            className="w-full rounded-xl bg-muted/50 border-0 px-4 h-10"
             autoFocus
             aria-label="Search for users to start a conversation"
           />
@@ -215,7 +202,7 @@ export function ConversationSidebar({
       <ScrollArea className="flex-1">
         {showUserSearch && searchQuery ? (
           // User search results
-          <div className="p-2">
+          <div className="px-4 pb-4">
             {filteredUsers.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center px-4">
                 <Search className="h-12 w-12 text-muted-foreground mb-3" />
@@ -233,15 +220,15 @@ export function ConversationSidebar({
                         handleUserSelect(user._id);
                       }
                     }}
-                    className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors text-left focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors text-left focus:outline-none"
                     aria-label={`Start conversation with ${user.name}`}
                   >
                     <div className="relative">
-                      <Avatar className="h-10 w-10">
+                      <Avatar className="h-12 w-12 border-2 border-background">
                         {user.imageUrl && (
                           <AvatarImage src={user.imageUrl} alt={user.name} />
                         )}
-                        <AvatarFallback>
+                        <AvatarFallback className="bg-gradient-to-br from-orange-400 to-orange-500 text-white font-medium text-sm">
                           {getInitials(user.name)}
                         </AvatarFallback>
                       </Avatar>
@@ -250,8 +237,10 @@ export function ConversationSidebar({
                       </div>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{user.name}</p>
-                      <p className="text-sm text-muted-foreground truncate">
+                      <p className="font-medium truncate text-sm">
+                        {user.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
                         {user.email}
                       </p>
                     </div>
@@ -262,13 +251,13 @@ export function ConversationSidebar({
           </div>
         ) : (
           // Conversation list
-          <div className="p-2">
+          <div className="px-4 pb-4">
             {conversations === undefined ? (
               // Loading skeleton
-              <div className="space-y-1">
+              <div className="space-y-2">
                 {Array.from({ length: 5 }).map((_, i) => (
                   <div key={i} className="flex items-start gap-3 p-3">
-                    <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+                    <Skeleton className="h-12 w-12 rounded-full shrink-0" />
                     <div className="flex-1 space-y-2">
                       <Skeleton className="h-4 w-3/4" />
                       <Skeleton className="h-3 w-full" />
@@ -281,7 +270,7 @@ export function ConversationSidebar({
                 <MessageSquare className="h-12 w-12 text-muted-foreground mb-3" />
                 <p className="text-muted-foreground">No conversations yet</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Click the search icon to find users
+                  Start a new conversation above
                 </p>
               </div>
             ) : (
@@ -294,8 +283,8 @@ export function ConversationSidebar({
                     <div
                       key={conversation._id}
                       className={cn(
-                        "group relative flex items-start gap-3 p-3 pr-12 rounded-lg transition-colors",
-                        isSelected ? "bg-accent" : "hover:bg-accent/50",
+                        "group relative flex items-start gap-3 p-3 pr-12 rounded-xl transition-all duration-200",
+                        isSelected ? "bg-muted/80" : "hover:bg-muted/40",
                       )}
                     >
                       <button
@@ -306,18 +295,18 @@ export function ConversationSidebar({
                             onConversationSelect(conversation._id);
                           }
                         }}
-                        className="flex items-start gap-3 flex-1 min-w-0 text-left focus:outline-none focus:ring-2 focus:ring-primary rounded-lg"
+                        className="flex items-start gap-3 flex-1 min-w-0 text-left focus:outline-none"
                         aria-label={`Open conversation with ${conversation.isGroup ? conversation.groupName : conversation.otherParticipants[0]?.name || "Unknown User"}${conversation.unreadCount > 0 ? `, ${conversation.unreadCount} unread messages` : ""}`}
                         aria-current={isSelected ? "true" : "false"}
                       >
                         <div className="relative shrink-0">
                           {conversation.isGroup ? (
-                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                              <Users className="h-5 w-5 text-primary" />
+                            <div className="h-12 w-12 rounded-full bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center">
+                              <Users className="h-5 w-5 text-white" />
                             </div>
                           ) : (
                             <>
-                              <Avatar className="h-10 w-10">
+                              <Avatar className="h-12 w-12 border-2 border-background">
                                 {conversation.otherParticipants[0]
                                   ?.imageUrl && (
                                   <AvatarImage
@@ -327,7 +316,7 @@ export function ConversationSidebar({
                                     alt={conversation.otherParticipants[0].name}
                                   />
                                 )}
-                                <AvatarFallback>
+                                <AvatarFallback className="bg-gradient-to-br from-orange-400 to-orange-500 text-white font-medium text-sm">
                                   {getInitials(
                                     conversation.otherParticipants[0]?.name ||
                                       "User",
@@ -349,9 +338,9 @@ export function ConversationSidebar({
                         </div>
 
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2 mb-1">
+                          <div className="flex items-start justify-between gap-2 mb-0.5">
                             <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                              <p className="font-medium truncate">
+                              <p className="font-medium truncate text-sm">
                                 {conversation.isGroup
                                   ? conversation.groupName
                                   : conversation.otherParticipants[0]?.name ||
@@ -363,7 +352,7 @@ export function ConversationSidebar({
                                   "anshulbansal2406@gmail.com" && (
                                   <Badge
                                     variant="default"
-                                    className="gap-1 shrink-0 bg-linear-to-r from-purple-500 to-pink-500 text-xs px-1.5 py-0"
+                                    className="gap-1 shrink-0 bg-linear-to-r from-purple-500 to-pink-500 text-[10px] px-1.5 py-0 h-4"
                                   >
                                     <Crown className="h-2.5 w-2.5" />
                                     Dev
@@ -372,7 +361,7 @@ export function ConversationSidebar({
                               {getUserRole(conversation) === "owner" && (
                                 <Badge
                                   variant="default"
-                                  className="gap-1 shrink-0 text-xs px-1.5 py-0"
+                                  className="gap-1 shrink-0 text-[10px] px-1.5 py-0 h-4"
                                 >
                                   <Crown className="h-2.5 w-2.5" />
                                   Owner
@@ -381,7 +370,7 @@ export function ConversationSidebar({
                               {getUserRole(conversation) === "admin" && (
                                 <Badge
                                   variant="secondary"
-                                  className="gap-1 shrink-0 text-xs px-1.5 py-0"
+                                  className="gap-1 shrink-0 text-[10px] px-1.5 py-0 h-4"
                                 >
                                   <Shield className="h-2.5 w-2.5" />
                                   Admin
@@ -389,7 +378,7 @@ export function ConversationSidebar({
                               )}
                             </div>
                             {conversation.lastMessage && (
-                              <span className="text-xs text-muted-foreground shrink-0 ml-2">
+                              <span className="text-[11px] text-muted-foreground shrink-0 ml-2">
                                 {formatTimestamp(
                                   conversation.lastMessage.createdAt,
                                 )}
@@ -398,7 +387,7 @@ export function ConversationSidebar({
                           </div>
 
                           <div className="flex items-center gap-2">
-                            <p className="text-sm text-muted-foreground truncate flex-1 min-w-0">
+                            <p className="text-xs text-muted-foreground truncate flex-1 min-w-0">
                               {conversation.isGroup ? (
                                 <span className="flex items-center gap-1">
                                   <Users className="h-3 w-3 shrink-0" />
@@ -420,7 +409,7 @@ export function ConversationSidebar({
                             {conversation.unreadCount > 0 && (
                               <Badge
                                 variant="default"
-                                className="h-5 min-w-5 px-1.5 flex items-center justify-center text-xs shrink-0"
+                                className="h-5 min-w-5 px-1.5 flex items-center justify-center text-[11px] shrink-0 bg-gradient-to-br from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 rounded-full"
                               >
                                 {conversation.unreadCount > 99
                                   ? "99+"
@@ -437,7 +426,7 @@ export function ConversationSidebar({
                           variant="ghost"
                           size="icon"
                           onClick={(e) => handleDeleteClick(e, conversation)}
-                          className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100 absolute right-2 top-2"
+                          className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100 absolute right-2 top-2 rounded-full hover:bg-destructive/10"
                           title="Delete conversation"
                           aria-label={`Delete conversation with ${conversation.otherParticipants[0]?.name || "Unknown User"}`}
                         >

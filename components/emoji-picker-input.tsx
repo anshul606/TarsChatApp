@@ -941,7 +941,7 @@ export function EmojiPickerInput({
                 className={cn(
                   "px-3 py-2 text-sm rounded-md transition-colors whitespace-nowrap shrink-0",
                   activeCategory === category
-                    ? "bg-primary text-primary-foreground"
+                    ? "bg-orange-500 text-white"
                     : "hover:bg-accent",
                 )}
               >

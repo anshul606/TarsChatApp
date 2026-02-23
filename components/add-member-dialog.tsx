@@ -187,9 +187,9 @@ export function AddMemberDialog({
                               setError("");
                             }
                           }}
-                          className={`w-full flex items-center gap-3 p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary ${
+                          className={`w-full flex items-center gap-3 p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 ${
                             isSelected
-                              ? "bg-accent border-2 border-primary"
+                              ? "bg-accent border-2 border-orange-500"
                               : "hover:bg-accent"
                           }`}
                           aria-label={`Select ${user.name} to add to group`}
