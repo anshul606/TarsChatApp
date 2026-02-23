@@ -16,7 +16,11 @@ export const get = query({
   args: { conversationId: v.id("conversations") },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthorized");
+
+    // Return empty array if not authenticated (happens during logout)
+    if (!identity) {
+      return [];
+    }
 
     const now = Date.now();
     const twoSecondsAgo = now - 2000;

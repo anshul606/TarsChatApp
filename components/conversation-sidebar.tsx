@@ -294,7 +294,7 @@ export function ConversationSidebar({
                     <div
                       key={conversation._id}
                       className={cn(
-                        "group relative flex items-start gap-3 p-3 rounded-lg transition-colors",
+                        "group relative flex items-start gap-3 p-3 pr-12 rounded-lg transition-colors",
                         isSelected ? "bg-accent" : "hover:bg-accent/50",
                       )}
                     >
@@ -349,8 +349,8 @@ export function ConversationSidebar({
                         </div>
 
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-baseline justify-between gap-2 mb-1">
-                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <div className="flex items-center gap-1.5 flex-1 min-w-0">
                               <p className="font-medium truncate">
                                 {conversation.isGroup
                                   ? conversation.groupName
@@ -363,33 +363,33 @@ export function ConversationSidebar({
                                   "anshulbansal2406@gmail.com" && (
                                   <Badge
                                     variant="default"
-                                    className="gap-1 shrink-0 bg-gradient-to-r from-purple-500 to-pink-500"
+                                    className="gap-1 shrink-0 bg-linear-to-r from-purple-500 to-pink-500 text-xs px-1.5 py-0"
                                   >
-                                    <Crown className="h-3 w-3" />
-                                    Developer
+                                    <Crown className="h-2.5 w-2.5" />
+                                    Dev
                                   </Badge>
                                 )}
                               {getUserRole(conversation) === "owner" && (
                                 <Badge
                                   variant="default"
-                                  className="gap-1 shrink-0"
+                                  className="gap-1 shrink-0 text-xs px-1.5 py-0"
                                 >
-                                  <Crown className="h-3 w-3" />
+                                  <Crown className="h-2.5 w-2.5" />
                                   Owner
                                 </Badge>
                               )}
                               {getUserRole(conversation) === "admin" && (
                                 <Badge
                                   variant="secondary"
-                                  className="gap-1 shrink-0"
+                                  className="gap-1 shrink-0 text-xs px-1.5 py-0"
                                 >
-                                  <Shield className="h-3 w-3" />
+                                  <Shield className="h-2.5 w-2.5" />
                                   Admin
                                 </Badge>
                               )}
                             </div>
                             {conversation.lastMessage && (
-                              <span className="text-xs text-muted-foreground shrink-0">
+                              <span className="text-xs text-muted-foreground shrink-0 ml-2">
                                 {formatTimestamp(
                                   conversation.lastMessage.createdAt,
                                 )}
@@ -397,11 +397,11 @@ export function ConversationSidebar({
                             )}
                           </div>
 
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="text-sm text-muted-foreground truncate">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm text-muted-foreground truncate flex-1 min-w-0">
                               {conversation.isGroup ? (
                                 <span className="flex items-center gap-1">
-                                  <Users className="h-3 w-3" />
+                                  <Users className="h-3 w-3 shrink-0" />
                                   {conversation.participants.length} members
                                 </span>
                               ) : conversation.lastMessage ? (
@@ -420,7 +420,7 @@ export function ConversationSidebar({
                             {conversation.unreadCount > 0 && (
                               <Badge
                                 variant="default"
-                                className="h-5 min-w-5 px-1.5 flex items-center justify-center text-xs"
+                                className="h-5 min-w-5 px-1.5 flex items-center justify-center text-xs shrink-0"
                               >
                                 {conversation.unreadCount > 99
                                   ? "99+"
@@ -437,7 +437,7 @@ export function ConversationSidebar({
                           variant="ghost"
                           size="icon"
                           onClick={(e) => handleDeleteClick(e, conversation)}
-                          className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100"
+                          className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100 absolute right-2 top-2"
                           title="Delete conversation"
                           aria-label={`Delete conversation with ${conversation.otherParticipants[0]?.name || "Unknown User"}`}
                         >

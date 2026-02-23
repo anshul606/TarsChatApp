@@ -54,7 +54,11 @@ export const upsertFromClerk = internalMutation({
 export const list = query({
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthorized");
+
+    // Return empty array if not authenticated (happens during logout)
+    if (!identity) {
+      return [];
+    }
 
     const users = await ctx.db
       .query("users")
@@ -96,7 +100,11 @@ export const get = query({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthorized");
+
+    // Return null if not authenticated (happens during logout)
+    if (!identity) {
+      return null;
+    }
 
     const user = await ctx.db.get(args.userId);
     return user;

@@ -85,79 +85,89 @@ export const create = mutation({
  */
 export const list = query({
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthorized");
-
-    // Try to get user, return empty array if not found yet (user still syncing)
-    let user;
     try {
-      user = await getUserByClerkId(ctx, identity.subject);
-    } catch (error) {
-      // User not synced yet, return empty array
-      console.log("User not synced yet:", identity.subject);
-      return [];
-    }
+      const identity = await ctx.auth.getUserIdentity();
 
-    // Query all conversations where the user is a participant
-    // Note: We collect all conversations and filter in memory because
-    // Convex doesn't support direct array contains queries with indexes
-    const allConversations = await ctx.db.query("conversations").collect();
-    const conversations = allConversations.filter((conv) =>
-      conv.participants.includes(user._id),
-    );
+      // Return empty array if not authenticated (happens during logout)
+      if (!identity) {
+        return [];
+      }
 
-    // Enrich each conversation with last message, unread count, and participant details
-    const enrichedConversations = await Promise.all(
-      conversations.map(async (conv) => {
-        const lastMessage = await getLastMessage(ctx, conv._id);
-        const unreadCount = await getUnreadCount(ctx, conv._id, user._id);
+      // Try to get user, return empty array if not found yet (user still syncing)
+      let user;
+      try {
+        user = await getUserByClerkId(ctx, identity.subject);
+      } catch (error) {
+        // User not synced yet, return empty array
+        console.log("User not synced yet:", identity.subject);
+        return [];
+      }
 
-        // Get participant details (excluding current user for direct messages)
-        const participantDetails = await Promise.all(
-          conv.participants
-            .filter((participantId) => participantId !== user._id)
-            .map(async (participantId) => {
-              const participant = await ctx.db.get(participantId);
-              return participant;
-            }),
-        );
-
-        return {
-          ...conv,
-          lastMessage,
-          unreadCount,
-          otherParticipants: participantDetails.filter((p) => p !== null),
-        };
-      }),
-    );
-
-    // Sort by lastMessageAt descending (most recent first)
-    enrichedConversations.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
-
-    // Pin developer chat to top (anshulbansal2406@gmail.com)
-    const DEVELOPER_EMAIL = "anshulbansal2406@gmail.com";
-    const developerUser = await ctx.db
-      .query("users")
-      .filter((q) => q.eq(q.field("email"), DEVELOPER_EMAIL))
-      .first();
-
-    if (developerUser) {
-      // Move developer's direct chat to the top
-      const developerChatIndex = enrichedConversations.findIndex(
-        (conv) =>
-          !conv.isGroup && conv.participants.includes(developerUser._id),
+      // Query all conversations where the user is a participant
+      // Note: We collect all conversations and filter in memory because
+      // Convex doesn't support direct array contains queries with indexes
+      const allConversations = await ctx.db.query("conversations").collect();
+      const conversations = allConversations.filter((conv) =>
+        conv.participants.includes(user._id),
       );
 
-      if (developerChatIndex > 0) {
-        const [developerChat] = enrichedConversations.splice(
-          developerChatIndex,
-          1,
-        );
-        enrichedConversations.unshift(developerChat);
-      }
-    }
+      // Enrich each conversation with last message, unread count, and participant details
+      const enrichedConversations = await Promise.all(
+        conversations.map(async (conv) => {
+          const lastMessage = await getLastMessage(ctx, conv._id);
+          const unreadCount = await getUnreadCount(ctx, conv._id, user._id);
 
-    return enrichedConversations;
+          // Get participant details (excluding current user for direct messages)
+          const participantDetails = await Promise.all(
+            conv.participants
+              .filter((participantId) => participantId !== user._id)
+              .map(async (participantId) => {
+                const participant = await ctx.db.get(participantId);
+                return participant;
+              }),
+          );
+
+          return {
+            ...conv,
+            lastMessage,
+            unreadCount,
+            otherParticipants: participantDetails.filter((p) => p !== null),
+          };
+        }),
+      );
+
+      // Sort by lastMessageAt descending (most recent first)
+      enrichedConversations.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
+
+      // Pin developer chat to top (anshulbansal2406@gmail.com)
+      const DEVELOPER_EMAIL = "anshulbansal2406@gmail.com";
+      const developerUser = await ctx.db
+        .query("users")
+        .filter((q) => q.eq(q.field("email"), DEVELOPER_EMAIL))
+        .first();
+
+      if (developerUser) {
+        // Move developer's direct chat to the top
+        const developerChatIndex = enrichedConversations.findIndex(
+          (conv) =>
+            !conv.isGroup && conv.participants.includes(developerUser._id),
+        );
+
+        if (developerChatIndex > 0) {
+          const [developerChat] = enrichedConversations.splice(
+            developerChatIndex,
+            1,
+          );
+          enrichedConversations.unshift(developerChat);
+        }
+      }
+
+      return enrichedConversations;
+    } catch (error) {
+      console.error("[conversations:list] Unexpected error:", error);
+      // Return empty array on any error to prevent UI crashes
+      return [];
+    }
   },
 });
 
@@ -211,7 +221,11 @@ export const get = query({
   args: { conversationId: v.id("conversations") },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthorized");
+
+    // Return null if not authenticated (happens during logout)
+    if (!identity) {
+      return null;
+    }
 
     // Try to get user, return null if not found yet (user still syncing)
     let user;
