@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Search } from "lucide-react";
+import { PresenceBadge } from "@/components/presence-badge";
 
 interface UserDirectoryProps {
   onConversationCreated?: (conversationId: Id<"conversations">) => void;
@@ -97,12 +98,17 @@ export function UserDirectory({ onConversationCreated }: UserDirectoryProps) {
                   onClick={() => handleUserSelect(user._id)}
                   className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors text-left"
                 >
-                  <Avatar>
-                    {user.imageUrl && (
-                      <AvatarImage src={user.imageUrl} alt={user.name} />
-                    )}
-                    <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-                  </Avatar>
+                  <div className="relative">
+                    <Avatar>
+                      {user.imageUrl && (
+                        <AvatarImage src={user.imageUrl} alt={user.name} />
+                      )}
+                      <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                    </Avatar>
+                    <div className="absolute -bottom-0.5 -right-0.5">
+                      <PresenceBadge userId={user._id} size="sm" />
+                    </div>
+                  </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">{user.name}</p>
                     <p className="text-sm text-muted-foreground truncate">

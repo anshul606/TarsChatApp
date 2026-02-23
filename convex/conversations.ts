@@ -155,3 +155,41 @@ export const markRead = mutation({
     }
   },
 });
+
+/**
+ * Get a single conversation by ID
+ *
+ * Returns conversation details with participant information
+ */
+export const get = query({
+  args: { conversationId: v.id("conversations") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthorized");
+
+    const user = await getUserByClerkId(ctx, identity.subject);
+
+    const conversation = await ctx.db.get(args.conversationId);
+    if (!conversation) return null;
+
+    // Verify user is a participant
+    if (!conversation.participants.includes(user._id)) {
+      throw new Error("Not a participant in this conversation");
+    }
+
+    // Get participant details (excluding current user)
+    const participantDetails = await Promise.all(
+      conversation.participants
+        .filter((participantId) => participantId !== user._id)
+        .map(async (participantId) => {
+          const participant = await ctx.db.get(participantId);
+          return participant;
+        }),
+    );
+
+    return {
+      ...conversation,
+      otherParticipants: participantDetails.filter((p) => p !== null),
+    };
+  },
+});

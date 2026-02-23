@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, Users, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PresenceBadge } from "@/components/presence-badge";
 
 interface ConversationSidebarProps {
   selectedConversationId?: Id<"conversations">;
@@ -133,12 +134,19 @@ export function ConversationSidebar({
                     onClick={() => handleUserSelect(user._id)}
                     className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors text-left"
                   >
-                    <Avatar className="h-10 w-10">
-                      {user.imageUrl && (
-                        <AvatarImage src={user.imageUrl} alt={user.name} />
-                      )}
-                      <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-                    </Avatar>
+                    <div className="relative">
+                      <Avatar className="h-10 w-10">
+                        {user.imageUrl && (
+                          <AvatarImage src={user.imageUrl} alt={user.name} />
+                        )}
+                        <AvatarFallback>
+                          {getInitials(user.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="absolute -bottom-0.5 -right-0.5">
+                        <PresenceBadge userId={user._id} size="sm" />
+                      </div>
+                    </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate">{user.name}</p>
                       <p className="text-sm text-muted-foreground truncate">
@@ -186,20 +194,32 @@ export function ConversationSidebar({
                             <Users className="h-5 w-5 text-primary" />
                           </div>
                         ) : (
-                          <Avatar className="h-10 w-10">
-                            {conversation.otherParticipants[0]?.imageUrl && (
-                              <AvatarImage
-                                src={conversation.otherParticipants[0].imageUrl}
-                                alt={conversation.otherParticipants[0].name}
-                              />
-                            )}
-                            <AvatarFallback>
-                              {getInitials(
-                                conversation.otherParticipants[0]?.name ||
-                                  "User",
+                          <>
+                            <Avatar className="h-10 w-10">
+                              {conversation.otherParticipants[0]?.imageUrl && (
+                                <AvatarImage
+                                  src={
+                                    conversation.otherParticipants[0].imageUrl
+                                  }
+                                  alt={conversation.otherParticipants[0].name}
+                                />
                               )}
-                            </AvatarFallback>
-                          </Avatar>
+                              <AvatarFallback>
+                                {getInitials(
+                                  conversation.otherParticipants[0]?.name ||
+                                    "User",
+                                )}
+                              </AvatarFallback>
+                            </Avatar>
+                            {conversation.otherParticipants[0]?._id && (
+                              <div className="absolute -bottom-0.5 -right-0.5">
+                                <PresenceBadge
+                                  userId={conversation.otherParticipants[0]._id}
+                                  size="sm"
+                                />
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
 
