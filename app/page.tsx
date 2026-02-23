@@ -74,6 +74,11 @@ export default function Home() {
     setShowMobileChat(false);
   };
 
+  const handleConversationDeleted = () => {
+    setSelectedConversationId(undefined);
+    setShowMobileChat(false);
+  };
+
   return (
     <div className="flex h-screen flex-col bg-background">
       <header className="border-b bg-card shadow-sm shrink-0">
@@ -107,6 +112,7 @@ export default function Home() {
               <ConversationSidebar
                 selectedConversationId={selectedConversationId}
                 onConversationSelect={handleConversationSelect}
+                onConversationDeleted={handleConversationDeleted}
               />
             </div>
             <div

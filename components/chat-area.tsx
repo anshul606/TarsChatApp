@@ -11,7 +11,8 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { MessageItem } from "@/components/message-item";
 import { PresenceBadge } from "@/components/presence-badge";
 import { TypingIndicator } from "@/components/typing-indicator";
-import { Send, MessageSquare, ArrowDown } from "lucide-react";
+import { AddMemberDialog } from "@/components/add-member-dialog";
+import { Send, MessageSquare, ArrowDown, UserPlus } from "lucide-react";
 
 /**
  * ChatArea Component
@@ -39,6 +40,7 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
   const [messageContent, setMessageContent] = useState("");
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [showNewMessagesButton, setShowNewMessagesButton] = useState(false);
+  const [showAddMemberDialog, setShowAddMemberDialog] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const previousMessageCountRef = useRef<number>(0);
@@ -53,12 +55,13 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
   const markRead = useMutation(api.conversations.markRead);
   const updateTyping = useMutation(api.typing.update);
 
-  // Mark conversation as read when opened or when new messages arrive
+  // Mark conversation as read when opened (only on conversationId change)
   useEffect(() => {
     if (conversationId) {
       markRead({ conversationId });
     }
-  }, [conversationId, messages, markRead]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationId]); // Only mark as read when conversation changes, not on every message
 
   // Check if user is scrolled to bottom
   const checkIfAtBottom = () => {
@@ -77,6 +80,8 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
         // Hide button when user scrolls to bottom manually
         if (isBottom) {
           setShowNewMessagesButton(false);
+          // Mark messages as read when user scrolls to bottom
+          markRead({ conversationId });
         }
       }
     }
@@ -90,9 +95,11 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
       );
       if (scrollContainer) {
         scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        // Mark as read when auto-scrolling to new messages
+        markRead({ conversationId });
       }
     }
-  }, [messages, isAtBottom]);
+  }, [messages, isAtBottom, conversationId, markRead]);
 
   // Show "New messages" button when new messages arrive while scrolled up
   useEffect(() => {
@@ -208,6 +215,8 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
           behavior: "smooth",
         });
         setShowNewMessagesButton(false);
+        // Mark messages as read when user clicks to view new messages
+        markRead({ conversationId });
       }
     }
   };
@@ -229,19 +238,59 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
           <div className="flex items-center gap-3">
             {conversation.isGroup ? (
               <>
-                <Avatar className="h-10 w-10">
-                  <AvatarFallback className="bg-primary/10 text-primary">
-                    <MessageSquare className="h-5 w-5" />
-                  </AvatarFallback>
-                </Avatar>
+                <div className="relative">
+                  <Avatar className="h-10 w-10">
+                    <AvatarFallback className="bg-primary/10 text-primary">
+                      <MessageSquare className="h-5 w-5" />
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
                 <div className="flex-1 min-w-0">
                   <h2 className="font-semibold text-lg truncate">
                     {conversation.groupName}
                   </h2>
-                  <p className="text-sm text-muted-foreground">
-                    {conversation.otherParticipants.length + 1} members
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm text-muted-foreground">
+                      {conversation.participants.length} members
+                    </p>
+                    {/* Show first 3 member avatars */}
+                    <div className="flex -space-x-2">
+                      {conversation.otherParticipants
+                        .slice(0, 3)
+                        .map((participant) => (
+                          <Avatar
+                            key={participant._id}
+                            className="h-5 w-5 border-2 border-background"
+                          >
+                            {participant.imageUrl && (
+                              <AvatarImage
+                                src={participant.imageUrl}
+                                alt={participant.name}
+                              />
+                            )}
+                            <AvatarFallback className="text-[8px]">
+                              {getInitials(participant.name)}
+                            </AvatarFallback>
+                          </Avatar>
+                        ))}
+                      {conversation.otherParticipants.length > 3 && (
+                        <div className="h-5 w-5 rounded-full bg-muted border-2 border-background flex items-center justify-center">
+                          <span className="text-[8px] text-muted-foreground">
+                            +{conversation.otherParticipants.length - 3}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowAddMemberDialog(true)}
+                  title="Add Member"
+                >
+                  <UserPlus className="h-5 w-5" />
+                </Button>
               </>
             ) : conversation.otherParticipants[0] ? (
               <>
@@ -354,6 +403,16 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
           </Button>
         </form>
       </div>
+
+      {/* Add Member Dialog */}
+      {conversation?.isGroup && (
+        <AddMemberDialog
+          open={showAddMemberDialog}
+          onOpenChange={setShowAddMemberDialog}
+          conversationId={conversationId}
+          existingParticipantIds={conversation.participants}
+        />
+      )}
     </div>
   );
 }

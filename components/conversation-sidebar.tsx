@@ -9,25 +9,45 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, Users, Search, X } from "lucide-react";
+import {
+  MessageSquare,
+  Users,
+  Search,
+  X,
+  Plus,
+  UserPlus,
+  Trash2,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PresenceBadge } from "@/components/presence-badge";
+import { CreateGroupDialog } from "@/components/create-group-dialog";
+import { DeleteConversationDialog } from "@/components/delete-conversation-dialog";
 
 interface ConversationSidebarProps {
   selectedConversationId?: Id<"conversations">;
   onConversationSelect: (conversationId: Id<"conversations">) => void;
+  onConversationDeleted?: () => void;
 }
 
 export function ConversationSidebar({
   selectedConversationId,
   onConversationSelect,
+  onConversationDeleted,
 }: ConversationSidebarProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showUserSearch, setShowUserSearch] = useState(false);
+  const [showCreateGroupDialog, setShowCreateGroupDialog] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [conversationToDelete, setConversationToDelete] = useState<{
+    id: Id<"conversations">;
+    name: string;
+    isGroup: boolean;
+  } | null>(null);
 
   const conversations = useQuery(api.conversations.list);
   const users = useQuery(api.users.list);
   const createConversation = useMutation(api.conversations.create);
+  const deleteConversation = useMutation(api.conversations.deleteConversation);
 
   const filteredUsers = useMemo(() => {
     if (!users || !searchQuery) return [];
@@ -47,6 +67,45 @@ export function ConversationSidebar({
       setShowUserSearch(false);
     } catch (error) {
       console.error("Failed to create conversation:", error);
+    }
+  };
+
+  const handleDeleteClick = (
+    e: React.MouseEvent,
+    conversation: {
+      _id: Id<"conversations">;
+      isGroup: boolean;
+      groupName?: string;
+      otherParticipants: any[];
+    },
+  ) => {
+    e.stopPropagation();
+    const name = conversation.isGroup
+      ? conversation.groupName || "Unnamed Group"
+      : conversation.otherParticipants[0]?.name || "Unknown User";
+
+    setConversationToDelete({
+      id: conversation._id,
+      name,
+      isGroup: conversation.isGroup,
+    });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!conversationToDelete) return;
+
+    try {
+      await deleteConversation({ conversationId: conversationToDelete.id });
+      setDeleteDialogOpen(false);
+      setConversationToDelete(null);
+
+      // If the deleted conversation was selected, notify parent
+      if (selectedConversationId === conversationToDelete.id) {
+        onConversationDeleted?.();
+      }
+    } catch (error) {
+      console.error("Failed to delete conversation:", error);
     }
   };
 
@@ -90,18 +149,30 @@ export function ConversationSidebar({
             <MessageSquare className="h-5 w-5" />
             Messages
           </h2>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowUserSearch(!showUserSearch)}
-            className="h-8 w-8"
-          >
-            {showUserSearch ? (
-              <X className="h-4 w-4" />
-            ) : (
-              <Search className="h-4 w-4" />
-            )}
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowCreateGroupDialog(true)}
+              className="h-8 w-8"
+              title="Create Group"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowUserSearch(!showUserSearch)}
+              className="h-8 w-8"
+              title="Find People"
+            >
+              {showUserSearch ? (
+                <X className="h-4 w-4" />
+              ) : (
+                <UserPlus className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
         </div>
 
         {showUserSearch && (
@@ -180,99 +251,117 @@ export function ConversationSidebar({
                     selectedConversationId === conversation._id;
 
                   return (
-                    <button
+                    <div
                       key={conversation._id}
-                      onClick={() => onConversationSelect(conversation._id)}
                       className={cn(
-                        "w-full flex items-start gap-3 p-3 rounded-lg transition-colors text-left",
+                        "group relative flex items-start gap-3 p-3 rounded-lg transition-colors",
                         isSelected ? "bg-accent" : "hover:bg-accent/50",
                       )}
                     >
-                      <div className="relative shrink-0">
-                        {conversation.isGroup ? (
-                          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                            <Users className="h-5 w-5 text-primary" />
-                          </div>
-                        ) : (
-                          <>
-                            <Avatar className="h-10 w-10">
-                              {conversation.otherParticipants[0]?.imageUrl && (
-                                <AvatarImage
-                                  src={
-                                    conversation.otherParticipants[0].imageUrl
-                                  }
-                                  alt={conversation.otherParticipants[0].name}
-                                />
-                              )}
-                              <AvatarFallback>
-                                {getInitials(
-                                  conversation.otherParticipants[0]?.name ||
-                                    "User",
+                      <button
+                        onClick={() => onConversationSelect(conversation._id)}
+                        className="flex items-start gap-3 flex-1 min-w-0 text-left"
+                      >
+                        <div className="relative shrink-0">
+                          {conversation.isGroup ? (
+                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                              <Users className="h-5 w-5 text-primary" />
+                            </div>
+                          ) : (
+                            <>
+                              <Avatar className="h-10 w-10">
+                                {conversation.otherParticipants[0]
+                                  ?.imageUrl && (
+                                  <AvatarImage
+                                    src={
+                                      conversation.otherParticipants[0].imageUrl
+                                    }
+                                    alt={conversation.otherParticipants[0].name}
+                                  />
                                 )}
-                              </AvatarFallback>
-                            </Avatar>
-                            {conversation.otherParticipants[0]?._id && (
-                              <div className="absolute -bottom-0.5 -right-0.5">
-                                <PresenceBadge
-                                  userId={conversation.otherParticipants[0]._id}
-                                  size="sm"
-                                />
-                              </div>
-                            )}
-                          </>
-                        )}
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-baseline justify-between gap-2 mb-1">
-                          <p className="font-medium truncate">
-                            {conversation.isGroup
-                              ? conversation.groupName
-                              : conversation.otherParticipants[0]?.name ||
-                                "Unknown User"}
-                          </p>
-                          {conversation.lastMessage && (
-                            <span className="text-xs text-muted-foreground shrink-0">
-                              {formatTimestamp(
-                                conversation.lastMessage.createdAt,
+                                <AvatarFallback>
+                                  {getInitials(
+                                    conversation.otherParticipants[0]?.name ||
+                                      "User",
+                                  )}
+                                </AvatarFallback>
+                              </Avatar>
+                              {conversation.otherParticipants[0]?._id && (
+                                <div className="absolute -bottom-0.5 -right-0.5">
+                                  <PresenceBadge
+                                    userId={
+                                      conversation.otherParticipants[0]._id
+                                    }
+                                    size="sm"
+                                  />
+                                </div>
                               )}
-                            </span>
+                            </>
                           )}
                         </div>
 
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-sm text-muted-foreground truncate">
-                            {conversation.isGroup ? (
-                              <span className="flex items-center gap-1">
-                                <Users className="h-3 w-3" />
-                                {conversation.participants.length} members
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline justify-between gap-2 mb-1">
+                            <p className="font-medium truncate">
+                              {conversation.isGroup
+                                ? conversation.groupName
+                                : conversation.otherParticipants[0]?.name ||
+                                  "Unknown User"}
+                            </p>
+                            {conversation.lastMessage && (
+                              <span className="text-xs text-muted-foreground shrink-0">
+                                {formatTimestamp(
+                                  conversation.lastMessage.createdAt,
+                                )}
                               </span>
-                            ) : conversation.lastMessage ? (
-                              conversation.lastMessage.isDeleted ? (
-                                <span className="italic">
-                                  This message was deleted
-                                </span>
-                              ) : (
-                                conversation.lastMessage.content
-                              )
-                            ) : (
-                              "No messages yet"
                             )}
-                          </p>
+                          </div>
 
-                          {conversation.unreadCount > 0 && (
-                            <Badge
-                              variant="default"
-                              className="h-5 min-w-5 px-1.5 flex items-center justify-center text-xs"
-                            >
-                              {conversation.unreadCount > 99
-                                ? "99+"
-                                : conversation.unreadCount}
-                            </Badge>
-                          )}
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-sm text-muted-foreground truncate">
+                              {conversation.isGroup ? (
+                                <span className="flex items-center gap-1">
+                                  <Users className="h-3 w-3" />
+                                  {conversation.participants.length} members
+                                </span>
+                              ) : conversation.lastMessage ? (
+                                conversation.lastMessage.isDeleted ? (
+                                  <span className="italic">
+                                    This message was deleted
+                                  </span>
+                                ) : (
+                                  conversation.lastMessage.content
+                                )
+                              ) : (
+                                "No messages yet"
+                              )}
+                            </p>
+
+                            {conversation.unreadCount > 0 && (
+                              <Badge
+                                variant="default"
+                                className="h-5 min-w-5 px-1.5 flex items-center justify-center text-xs"
+                              >
+                                {conversation.unreadCount > 99
+                                  ? "99+"
+                                  : conversation.unreadCount}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </button>
+                      </button>
+
+                      {/* Delete button - shows on hover */}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => handleDeleteClick(e, conversation)}
+                        className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Delete conversation"
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
                   );
                 })}
               </div>
@@ -280,6 +369,24 @@ export function ConversationSidebar({
           </div>
         )}
       </ScrollArea>
+
+      {/* Create Group Dialog */}
+      <CreateGroupDialog
+        open={showCreateGroupDialog}
+        onOpenChange={setShowCreateGroupDialog}
+        onGroupCreated={onConversationSelect}
+      />
+
+      {/* Delete Conversation Dialog */}
+      {conversationToDelete && (
+        <DeleteConversationDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          onConfirm={handleDeleteConfirm}
+          conversationName={conversationToDelete.name}
+          isGroup={conversationToDelete.isGroup}
+        />
+      )}
     </div>
   );
 }

@@ -13,6 +13,7 @@ import type * as helpers from "../helpers.js";
 import type * as http from "../http.js";
 import type * as messages from "../messages.js";
 import type * as presence from "../presence.js";
+import type * as reactions from "../reactions.js";
 import type * as syncCurrentUser from "../syncCurrentUser.js";
 import type * as typing from "../typing.js";
 import type * as users from "../users.js";
@@ -29,6 +30,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   messages: typeof messages;
   presence: typeof presence;
+  reactions: typeof reactions;
   syncCurrentUser: typeof syncCurrentUser;
   typing: typeof typing;
   users: typeof users;
