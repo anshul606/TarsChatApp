@@ -9,7 +9,6 @@
  */
 
 import type * as conversations from "../conversations.js";
-import type * as debug from "../debug.js";
 import type * as helpers from "../helpers.js";
 import type * as http from "../http.js";
 import type * as syncCurrentUser from "../syncCurrentUser.js";
@@ -23,7 +22,6 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   conversations: typeof conversations;
-  debug: typeof debug;
   helpers: typeof helpers;
   http: typeof http;
   syncCurrentUser: typeof syncCurrentUser;

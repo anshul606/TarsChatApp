@@ -11,16 +11,11 @@ import { Search } from "lucide-react";
 
 interface UserDirectoryProps {
   onConversationCreated?: (conversationId: Id<"conversations">) => void;
-  isUserSynced?: boolean;
 }
 
-export function UserDirectory({
-  onConversationCreated,
-  isUserSynced = false,
-}: UserDirectoryProps) {
+export function UserDirectory({ onConversationCreated }: UserDirectoryProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  // Only query users if the current user is synced to avoid "Unauthorized" error
-  const users = useQuery(api.users.list, isUserSynced ? undefined : "skip");
+  const users = useQuery(api.users.list);
   const createConversation = useMutation(api.conversations.create);
 
   // Filter users by search term (real-time client-side filtering)
@@ -79,14 +74,7 @@ export function UserDirectory({
       {/* User List */}
       <ScrollArea className="flex-1">
         <div className="p-2">
-          {!isUserSynced ? (
-            // User not synced state
-            <div className="flex flex-col items-center justify-center py-8 text-center px-4">
-              <p className="text-muted-foreground">
-                Please sync your user account first
-              </p>
-            </div>
-          ) : users === undefined ? (
+          {users === undefined ? (
             // Loading state
             <div className="flex items-center justify-center py-8 text-muted-foreground">
               Loading users...
