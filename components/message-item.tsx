@@ -7,13 +7,14 @@ import { formatMessageTimestamp } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { Trash2, Smile } from "lucide-react";
 import { ReactionPicker } from "./reaction-picker";
+import { ReadReceiptTicks } from "./read-receipt-ticks";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 
 /**
  * MessageItem Component
- * Requirements: 4.1, 4.2, 4.3, 4.4, 11.1, 11.2, 11.3, 12.2, 12.3, 12.4, 12.5
+ * Requirements: 4.1, 4.2, 4.3, 4.4, 10.2, 10.3, 10.4, 11.1, 11.2, 11.3, 11.5, 12.2, 12.3, 12.4, 12.5
  *
  * Displays an individual message with:
  * - Sender name and avatar
@@ -24,11 +25,12 @@ import { useState, useEffect, useRef } from "react";
  * - Reaction counts grouped by emoji
  * - Highlighted reactions from current user
  * - Real-time reaction updates
+ * - Read receipt ticks for own messages
  */
 
 interface MessageItemProps {
   message: {
-    _id: Id<"messages">;
+    _id: Id<"messages"> | string;
     content: string;
     isDeleted: boolean;
     createdAt: number;
@@ -38,15 +40,20 @@ interface MessageItemProps {
       name: string;
       imageUrl?: string;
     } | null;
+    isOptimistic?: boolean;
   };
   currentUserId: Id<"users">;
-  onDelete: (messageId: Id<"messages">) => void;
+  conversationId: Id<"conversations">;
+  isGroupConversation: boolean;
+  onDelete: (messageId: Id<"messages"> | string) => void;
   onReact?: (messageId: Id<"messages">, emoji: string) => void;
 }
 
 export function MessageItem({
   message,
   currentUserId,
+  conversationId,
+  isGroupConversation,
   onDelete,
   onReact,
 }: MessageItemProps) {
@@ -61,12 +68,44 @@ export function MessageItem({
 
   // State for showing reaction picker
   const [showReactionPicker, setShowReactionPicker] = useState(false);
+  const [optimisticReactions, setOptimisticReactions] = useState<
+    Array<{ emoji: string; userId: Id<"users">; isOptimistic: boolean }>
+  >([]);
   const pickerRef = useRef<HTMLDivElement>(null);
 
   // Subscribe to reactions for this message
-  const reactions = useQuery(api.reactions.getByMessage, {
-    messageId: message._id,
-  });
+  // Only subscribe when message is not deleted and not optimistic
+  const reactions = useQuery(
+    api.reactions.getByMessage,
+    !message.isDeleted && !message.isOptimistic
+      ? { messageId: message._id as Id<"messages"> }
+      : "skip",
+  );
+
+  // Subscribe to read receipt status for own messages
+  // Requirements: 10.2, 10.3, 10.4, 11.5, 12.5
+  const directTickStatus = useQuery(
+    api.readReceipts.getDirectMessageTickStatus,
+    isOwnMessage &&
+      !message.isOptimistic &&
+      !message.isDeleted &&
+      !isGroupConversation
+      ? { messageId: message._id as Id<"messages"> }
+      : "skip",
+  );
+
+  const groupTickStatus = useQuery(
+    api.readReceipts.getGroupMessageTickStatus,
+    isOwnMessage &&
+      !message.isOptimistic &&
+      !message.isDeleted &&
+      isGroupConversation
+      ? { messageId: message._id as Id<"messages"> }
+      : "skip",
+  );
+
+  // Determine which tick status to use
+  const tickStatus = isGroupConversation ? groupTickStatus : directTickStatus;
 
   // Toggle reaction mutation
   const toggleReaction = useMutation(api.reactions.toggle);
@@ -91,36 +130,83 @@ export function MessageItem({
   }, [showReactionPicker]);
 
   // Group reactions by emoji and count them
-  const reactionCounts = reactions?.reduce(
-    (acc, reaction) => {
-      if (!acc[reaction.emoji]) {
-        acc[reaction.emoji] = {
-          count: 0,
-          userIds: [],
-        };
-      }
-      acc[reaction.emoji].count++;
-      acc[reaction.emoji].userIds.push(reaction.userId);
-      return acc;
-    },
-    {} as Record<string, { count: number; userIds: Id<"users">[] }>,
-  );
+  const reactionCounts = useMemo(() => {
+    // Merge real reactions with optimistic reactions
+    const allReactions = [
+      ...(reactions || []),
+      ...optimisticReactions.map((r) => ({
+        emoji: r.emoji,
+        userId: r.userId,
+        messageId: message._id as Id<"messages">,
+        _id: `optimistic-${r.emoji}-${r.userId}` as Id<"reactions">,
+        createdAt: Date.now(),
+      })),
+    ];
+
+    return allReactions.reduce(
+      (acc, reaction) => {
+        if (!acc[reaction.emoji]) {
+          acc[reaction.emoji] = {
+            count: 0,
+            userIds: [],
+          };
+        }
+        acc[reaction.emoji].count++;
+        acc[reaction.emoji].userIds.push(reaction.userId);
+        return acc;
+      },
+      {} as Record<string, { count: number; userIds: Id<"users">[] }>,
+    );
+  }, [reactions, optimisticReactions, message._id]);
 
   const handleReactionClick = async (emoji: string) => {
+    if (message.isOptimistic) return; // Don't allow reactions on optimistic messages
+
     try {
+      // Check if user already reacted with this emoji
+      const existingReaction = reactions?.find(
+        (r) => r.emoji === emoji && r.userId === currentUserId,
+      );
+
+      if (existingReaction) {
+        // Remove optimistic reaction
+        setOptimisticReactions((prev) =>
+          prev.filter(
+            (r) => !(r.emoji === emoji && r.userId === currentUserId),
+          ),
+        );
+      } else {
+        // Add optimistic reaction
+        setOptimisticReactions((prev) => [
+          ...prev,
+          { emoji, userId: currentUserId, isOptimistic: true },
+        ]);
+      }
+
+      // Perform actual toggle
       await toggleReaction({
-        messageId: message._id,
+        messageId: message._id as Id<"messages">,
         emoji,
       });
+
+      // Clear optimistic reaction after confirmation
+      setOptimisticReactions((prev) =>
+        prev.filter((r) => !(r.emoji === emoji && r.userId === currentUserId)),
+      );
     } catch (error) {
       console.error("Failed to toggle reaction:", error);
+      // Remove optimistic reaction on error
+      setOptimisticReactions((prev) =>
+        prev.filter((r) => !(r.emoji === emoji && r.userId === currentUserId)),
+      );
     }
   };
 
   return (
     <div
+      data-message-id={message._id}
       className={cn(
-        "flex gap-2 px-2",
+        "flex gap-2 px-2 group/message",
         isOwnMessage ? "justify-end" : "justify-start",
       )}
     >
@@ -134,10 +220,45 @@ export function MessageItem({
         </Avatar>
       )}
 
+      {/* Action Buttons - Left side for own messages */}
+      {isOwnMessage && !message.isDeleted && !message.isOptimistic && (
+        <div className="flex items-center gap-1 opacity-0 group-hover/message:opacity-100 transition-opacity self-center">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setShowReactionPicker(!showReactionPicker);
+            }}
+            className="h-8 w-8 hover:bg-accent"
+            aria-label="Add reaction"
+            title="Add reaction"
+          >
+            <Smile className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => {
+              console.log("Delete button clicked!", message._id);
+              e.preventDefault();
+              e.stopPropagation();
+              onDelete(message._id);
+            }}
+            className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+            aria-label="Delete message"
+            title="Delete message"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
       {/* Message Bubble */}
       <div
         className={cn(
-          "flex flex-col max-w-[70%] group",
+          "flex flex-col max-w-[70%]",
           isOwnMessage ? "items-end" : "items-start",
         )}
       >
@@ -152,10 +273,11 @@ export function MessageItem({
         <div className="relative">
           <div
             className={cn(
-              "rounded-2xl px-3 py-2 relative",
+              "rounded-2xl px-4 py-2.5 relative shadow-sm",
               isOwnMessage
-                ? "bg-primary text-primary-foreground rounded-br-sm"
-                : "bg-muted rounded-bl-sm",
+                ? "bg-gradient-to-br from-primary to-primary/90 text-primary-foreground rounded-br-md shadow-primary/20"
+                : "bg-card border border-border/50 rounded-bl-md",
+              message.isOptimistic && "opacity-70",
             )}
           >
             {message.isDeleted ? (
@@ -163,59 +285,40 @@ export function MessageItem({
                 This message was deleted
               </p>
             ) : (
-              <p className="text-sm whitespace-pre-wrap break-words">
+              <p className="text-sm whitespace-pre-wrap wrap-break-word">
                 {message.content}
               </p>
             )}
 
-            {/* Timestamp */}
-            <span
-              className={cn(
-                "text-[10px] mt-1 block",
-                isOwnMessage
-                  ? "text-primary-foreground/70"
-                  : "text-muted-foreground",
-              )}
-            >
-              {formatMessageTimestamp(message.createdAt)}
-            </span>
-
-            {/* Delete Button */}
-            {isOwnMessage && !message.isDeleted && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => onDelete(message._id)}
+            {/* Timestamp and Read Receipt Ticks */}
+            <div className="flex items-center gap-1 mt-1">
+              <span
                 className={cn(
-                  "absolute -top-2 -right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity",
-                  "bg-background border shadow-sm hover:bg-accent",
+                  "text-[10px]",
+                  isOwnMessage
+                    ? "text-primary-foreground/70"
+                    : "text-muted-foreground",
                 )}
-                aria-label="Delete message"
               >
-                <Trash2 className="h-3 w-3" />
-              </Button>
-            )}
-
-            {/* Reaction Button */}
-            {!message.isDeleted && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowReactionPicker(!showReactionPicker)}
-                className={cn(
-                  "absolute -top-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity",
-                  "bg-background border shadow-sm hover:bg-accent",
-                  isOwnMessage ? "-right-10" : "-left-2",
+                {formatMessageTimestamp(message.createdAt)}
+              </span>
+              {/* Read Receipt Ticks - Requirements: 10.2, 10.3, 10.4, 11.5, 12.5 */}
+              {isOwnMessage &&
+                !message.isOptimistic &&
+                !message.isDeleted &&
+                tickStatus && (
+                  <ReadReceiptTicks
+                    status={tickStatus}
+                    className={
+                      isOwnMessage ? "text-primary-foreground/70" : undefined
+                    }
+                  />
                 )}
-                aria-label="Add reaction"
-              >
-                <Smile className="h-3 w-3" />
-              </Button>
-            )}
+            </div>
           </div>
 
           {/* Reaction Picker */}
-          {showReactionPicker && (
+          {showReactionPicker && !message.isOptimistic && (
             <div
               ref={pickerRef}
               className={cn(
@@ -224,7 +327,7 @@ export function MessageItem({
               )}
             >
               <ReactionPicker
-                messageId={message._id}
+                messageId={message._id as Id<"messages">}
                 onReactionSelect={() => setShowReactionPicker(false)}
                 className="animate-in fade-in-0 zoom-in-95"
               />
@@ -263,6 +366,26 @@ export function MessageItem({
           )}
         </div>
       </div>
+
+      {/* Action Buttons - Right side for received messages */}
+      {!isOwnMessage && !message.isDeleted && !message.isOptimistic && (
+        <div className="flex items-center gap-1 opacity-0 group-hover/message:opacity-100 transition-opacity self-center">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setShowReactionPicker(!showReactionPicker);
+            }}
+            className="h-8 w-8 hover:bg-accent"
+            aria-label="Add reaction"
+            title="Add reaction"
+          >
+            <Smile className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
 
       {/* Spacer for own messages to maintain alignment */}
       {isOwnMessage && <div className="w-8 shrink-0" />}

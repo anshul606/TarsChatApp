@@ -25,7 +25,11 @@ export function TypingIndicator({
   currentUserId,
 }: TypingIndicatorProps) {
   // Subscribe to typing status for this conversation
-  const typingUsers = useQuery(api.typing.get, { conversationId });
+  // Only subscribe when conversationId is defined
+  const typingUsers = useQuery(
+    api.typing.get,
+    conversationId ? { conversationId } : "skip",
+  );
 
   // Filter out current user
   const otherUsersTyping =

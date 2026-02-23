@@ -18,8 +18,9 @@ export const list = query({
     if (!conversation) return null; // Return null instead of throwing error
 
     const user = await getUserByClerkId(ctx, identity.subject);
+    // Return null if user is not a participant (instead of throwing error)
     if (!conversation.participants.includes(user._id)) {
-      throw new Error("Not a participant");
+      return null;
     }
 
     // Query messages ordered by createdAt ascending
@@ -113,5 +114,7 @@ export const deleteMessage = mutation({
       isDeleted: true,
       deletedAt: Date.now(),
     });
+
+    return { success: true };
   },
 });

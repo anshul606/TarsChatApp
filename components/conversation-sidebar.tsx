@@ -17,11 +17,14 @@ import {
   Plus,
   UserPlus,
   Trash2,
+  Crown,
+  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PresenceBadge } from "@/components/presence-badge";
 import { CreateGroupDialog } from "@/components/create-group-dialog";
 import { DeleteConversationDialog } from "@/components/delete-conversation-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ConversationSidebarProps {
   selectedConversationId?: Id<"conversations">;
@@ -46,6 +49,7 @@ export function ConversationSidebar({
 
   const conversations = useQuery(api.conversations.list);
   const users = useQuery(api.users.list);
+  const currentUser = useQuery(api.users.getCurrentUser);
   const createConversation = useMutation(api.conversations.create);
   const deleteConversation = useMutation(api.conversations.deleteConversation);
 
@@ -140,6 +144,20 @@ export function ConversationSidebar({
     }
   };
 
+  const getUserRole = (conversation: any) => {
+    if (!conversation.isGroup || !currentUser) return null;
+
+    if (conversation.ownerId === currentUser._id) {
+      return "owner";
+    }
+
+    if (conversation.admins?.includes(currentUser._id)) {
+      return "admin";
+    }
+
+    return null;
+  };
+
   return (
     <div className="flex h-full w-full flex-col bg-background">
       {/* Header with Search */}
@@ -156,6 +174,7 @@ export function ConversationSidebar({
               onClick={() => setShowCreateGroupDialog(true)}
               className="h-8 w-8"
               title="Create Group"
+              aria-label="Create new group chat"
             >
               <Plus className="h-4 w-4" />
             </Button>
@@ -165,6 +184,10 @@ export function ConversationSidebar({
               onClick={() => setShowUserSearch(!showUserSearch)}
               className="h-8 w-8"
               title="Find People"
+              aria-label={
+                showUserSearch ? "Close user search" : "Find people to message"
+              }
+              aria-expanded={showUserSearch}
             >
               {showUserSearch ? (
                 <X className="h-4 w-4" />
@@ -183,6 +206,7 @@ export function ConversationSidebar({
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full"
             autoFocus
+            aria-label="Search for users to start a conversation"
           />
         )}
       </div>
@@ -203,7 +227,14 @@ export function ConversationSidebar({
                   <button
                     key={user._id}
                     onClick={() => handleUserSelect(user._id)}
-                    className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors text-left"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        handleUserSelect(user._id);
+                      }
+                    }}
+                    className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors text-left focus:outline-none focus:ring-2 focus:ring-primary"
+                    aria-label={`Start conversation with ${user.name}`}
                   >
                     <div className="relative">
                       <Avatar className="h-10 w-10">
@@ -233,8 +264,17 @@ export function ConversationSidebar({
           // Conversation list
           <div className="p-2">
             {conversations === undefined ? (
-              <div className="flex items-center justify-center py-8 text-muted-foreground">
-                Loading conversations...
+              // Loading skeleton
+              <div className="space-y-1">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex items-start gap-3 p-3">
+                    <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-3 w-full" />
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : conversations.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center px-4">
@@ -260,7 +300,15 @@ export function ConversationSidebar({
                     >
                       <button
                         onClick={() => onConversationSelect(conversation._id)}
-                        className="flex items-start gap-3 flex-1 min-w-0 text-left"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            onConversationSelect(conversation._id);
+                          }
+                        }}
+                        className="flex items-start gap-3 flex-1 min-w-0 text-left focus:outline-none focus:ring-2 focus:ring-primary rounded-lg"
+                        aria-label={`Open conversation with ${conversation.isGroup ? conversation.groupName : conversation.otherParticipants[0]?.name || "Unknown User"}${conversation.unreadCount > 0 ? `, ${conversation.unreadCount} unread messages` : ""}`}
+                        aria-current={isSelected ? "true" : "false"}
                       >
                         <div className="relative shrink-0">
                           {conversation.isGroup ? (
@@ -302,12 +350,32 @@ export function ConversationSidebar({
 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-baseline justify-between gap-2 mb-1">
-                            <p className="font-medium truncate">
-                              {conversation.isGroup
-                                ? conversation.groupName
-                                : conversation.otherParticipants[0]?.name ||
-                                  "Unknown User"}
-                            </p>
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <p className="font-medium truncate">
+                                {conversation.isGroup
+                                  ? conversation.groupName
+                                  : conversation.otherParticipants[0]?.name ||
+                                    "Unknown User"}
+                              </p>
+                              {getUserRole(conversation) === "owner" && (
+                                <Badge
+                                  variant="default"
+                                  className="gap-1 shrink-0"
+                                >
+                                  <Crown className="h-3 w-3" />
+                                  Owner
+                                </Badge>
+                              )}
+                              {getUserRole(conversation) === "admin" && (
+                                <Badge
+                                  variant="secondary"
+                                  className="gap-1 shrink-0"
+                                >
+                                  <Shield className="h-3 w-3" />
+                                  Admin
+                                </Badge>
+                              )}
+                            </div>
                             {conversation.lastMessage && (
                               <span className="text-xs text-muted-foreground shrink-0">
                                 {formatTimestamp(
@@ -351,16 +419,19 @@ export function ConversationSidebar({
                         </div>
                       </button>
 
-                      {/* Delete button - shows on hover */}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => handleDeleteClick(e, conversation)}
-                        className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Delete conversation"
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      {/* Delete button - shows on hover, only for direct messages */}
+                      {!conversation.isGroup && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => handleDeleteClick(e, conversation)}
+                          className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100"
+                          title="Delete conversation"
+                          aria-label={`Delete conversation with ${conversation.otherParticipants[0]?.name || "Unknown User"}`}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      )}
                     </div>
                   );
                 })}

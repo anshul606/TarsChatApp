@@ -72,3 +72,15 @@ export async function getUserByClerkId(ctx: QueryCtx, clerkId: string) {
   if (!user) throw new Error("User not found");
   return user;
 }
+
+// Query to get a user by ID
+export const get = query({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthorized");
+
+    const user = await ctx.db.get(args.userId);
+    return user;
+  },
+});

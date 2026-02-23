@@ -11,7 +11,8 @@ interface PresenceBadgeProps {
 }
 
 export function PresenceBadge({ userId, size = "md" }: PresenceBadgeProps) {
-  const isOnline = useQuery(api.presence.get, { userId });
+  // Only subscribe when userId is defined
+  const isOnline = useQuery(api.presence.get, userId ? { userId } : "skip");
 
   const sizeClasses = {
     sm: "h-3 w-3",

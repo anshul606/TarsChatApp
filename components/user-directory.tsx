@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Search } from "lucide-react";
 import { PresenceBadge } from "@/components/presence-badge";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface UserDirectoryProps {
   onConversationCreated?: (conversationId: Id<"conversations">) => void;
@@ -76,9 +77,17 @@ export function UserDirectory({ onConversationCreated }: UserDirectoryProps) {
       <ScrollArea className="flex-1">
         <div className="p-2">
           {users === undefined ? (
-            // Loading state
-            <div className="flex items-center justify-center py-8 text-muted-foreground">
-              Loading users...
+            // Loading skeleton
+            <div className="space-y-1">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3 p-3">
+                  <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-2/3" />
+                    <Skeleton className="h-3 w-1/2" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : filteredUsers.length === 0 ? (
             // Empty state

@@ -36,6 +36,8 @@ export function AddMemberDialog({
   const [selectedUserId, setSelectedUserId] = useState<Id<"users"> | null>(
     null,
   );
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const users = useQuery(api.users.list);
   const addMember = useMutation(api.conversations.addMember);
@@ -63,6 +65,9 @@ export function AddMemberDialog({
   const handleAddMember = async () => {
     if (!selectedUserId) return;
 
+    setError("");
+    setIsLoading(true);
+
     try {
       await addMember({
         conversationId,
@@ -72,11 +77,17 @@ export function AddMemberDialog({
       // Reset form
       setSelectedUserId(null);
       setSearchQuery("");
+      setError("");
 
       // Close dialog
       onOpenChange(false);
-    } catch (error) {
-      console.error("Failed to add member:", error);
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to add member";
+      setError(errorMessage);
+      console.error("Failed to add member:", err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -89,8 +100,18 @@ export function AddMemberDialog({
       .slice(0, 2);
   };
 
+  const handleOpenChange = (open: boolean) => {
+    if (!open && !isLoading) {
+      // Reset form when closing
+      setSelectedUserId(null);
+      setSearchQuery("");
+      setError("");
+    }
+    onOpenChange(open);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[450px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -103,6 +124,16 @@ export function AddMemberDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          {/* Error Message */}
+          {error && (
+            <div
+              className="text-sm text-destructive bg-destructive/10 p-3 rounded-md"
+              role="alert"
+            >
+              {error}
+            </div>
+          )}
+
           {/* Search Input */}
           <div className="space-y-2">
             <Label>Search Users</Label>
@@ -112,8 +143,13 @@ export function AddMemberDialog({
                 type="text"
                 placeholder="Search users..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setError("");
+                }}
                 className="pl-9"
+                aria-label="Search users to add to group"
+                disabled={isLoading}
               />
             </div>
           </div>
@@ -140,12 +176,25 @@ export function AddMemberDialog({
                       return (
                         <button
                           key={user._id}
-                          onClick={() => setSelectedUserId(user._id)}
-                          className={`w-full flex items-center gap-3 p-2 rounded-lg transition-colors ${
+                          onClick={() => {
+                            setSelectedUserId(user._id);
+                            setError("");
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              setSelectedUserId(user._id);
+                              setError("");
+                            }
+                          }}
+                          className={`w-full flex items-center gap-3 p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary ${
                             isSelected
                               ? "bg-accent border-2 border-primary"
                               : "hover:bg-accent"
                           }`}
+                          aria-label={`Select ${user.name} to add to group`}
+                          aria-pressed={isSelected}
+                          disabled={isLoading}
                         >
                           <Avatar className="h-8 w-8">
                             {user.imageUrl && (
@@ -177,11 +226,21 @@ export function AddMemberDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="outline"
+            onClick={() => handleOpenChange(false)}
+            aria-label="Cancel adding member"
+            disabled={isLoading}
+          >
             Cancel
           </Button>
-          <Button onClick={handleAddMember} disabled={!selectedUserId}>
-            Add Member
+          <Button
+            onClick={handleAddMember}
+            disabled={!selectedUserId || isLoading}
+            aria-label="Add selected member to group"
+            aria-disabled={!selectedUserId || isLoading}
+          >
+            {isLoading ? "Adding..." : "Add Member"}
           </Button>
         </DialogFooter>
       </DialogContent>

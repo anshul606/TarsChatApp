@@ -18,11 +18,14 @@ export default defineSchema({
     participants: v.array(v.id("users")), // Array of user IDs
     isGroup: v.boolean(), // true for group chats
     groupName: v.optional(v.string()), // Name for group chats
+    ownerId: v.optional(v.id("users")), // Group owner (for group chats)
+    admins: v.optional(v.array(v.id("users"))), // Group admins (for group chats)
     createdAt: v.number(), // Unix timestamp
     lastMessageAt: v.number(), // For sorting conversations
   })
     .index("by_participant", ["participants"]) // Query by participant
-    .index("by_last_message", ["lastMessageAt"]), // Sort by recent activity
+    .index("by_last_message", ["lastMessageAt"]) // Sort by recent activity
+    .index("by_owner", ["ownerId"]), // Query by owner
 
   // Messages table - stores all messages
   messages: defineTable({
@@ -70,4 +73,24 @@ export default defineSchema({
   })
     .index("by_conversation_user", ["conversationId", "userId"]) // Upsert read status
     .index("by_user", ["userId"]), // Get all read status for user
+
+  // Message delivery status - track when messages are delivered to each recipient
+  messageDeliveryStatus: defineTable({
+    messageId: v.id("messages"), // Which message
+    userId: v.id("users"), // Which recipient
+    deliveredAt: v.number(), // Delivery timestamp
+  })
+    .index("by_message", ["messageId"]) // Get all delivery statuses for a message
+    .index("by_message_user", ["messageId", "userId"]) // Check delivery for specific user
+    .index("by_user", ["userId"]), // Get all deliveries for a user
+
+  // Message read status - track when messages are read by each recipient
+  messageReadStatus: defineTable({
+    messageId: v.id("messages"), // Which message
+    userId: v.id("users"), // Which recipient
+    readAt: v.number(), // Read timestamp
+  })
+    .index("by_message", ["messageId"]) // Get all read statuses for a message
+    .index("by_message_user", ["messageId", "userId"]) // Check read status for specific user
+    .index("by_user", ["userId"]), // Get all reads for a user
 });

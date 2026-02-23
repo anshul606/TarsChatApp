@@ -124,6 +124,8 @@ export function CreateGroupDialog({
               placeholder="Enter group name..."
               value={groupName}
               onChange={(e) => setGroupName(e.target.value)}
+              aria-required="true"
+              aria-invalid={groupName.trim().length === 0}
             />
           </div>
 
@@ -140,6 +142,7 @@ export function CreateGroupDialog({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
+                aria-label="Search users to add to group"
               />
             </div>
 
@@ -161,12 +164,22 @@ export function CreateGroupDialog({
                       return (
                         <div
                           key={user._id}
-                          className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent cursor-pointer"
+                          role="checkbox"
+                          aria-checked={isSelected}
+                          tabIndex={0}
+                          className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary"
                           onClick={() => handleUserToggle(user._id)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              handleUserToggle(user._id);
+                            }
+                          }}
                         >
                           <Checkbox
                             checked={isSelected}
                             onCheckedChange={() => handleUserToggle(user._id)}
+                            aria-label={`Select ${user.name}`}
                           />
                           <Avatar className="h-8 w-8">
                             {user.imageUrl && (
@@ -204,10 +217,19 @@ export function CreateGroupDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            aria-label="Cancel group creation"
+          >
             Cancel
           </Button>
-          <Button onClick={handleCreateGroup} disabled={!isValid}>
+          <Button
+            onClick={handleCreateGroup}
+            disabled={!isValid}
+            aria-label="Create group chat"
+            aria-disabled={!isValid}
+          >
             Create Group
           </Button>
         </DialogFooter>
