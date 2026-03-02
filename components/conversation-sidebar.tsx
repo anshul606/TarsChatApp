@@ -161,14 +161,14 @@ export function ConversationSidebar({
   return (
     <div className="flex h-full w-full flex-col bg-background">
       {/* Header */}
-      <div className="px-6 pt-6 pb-4 shrink-0">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-semibold">Messages</h2>
+      <div className="px-4 pt-5 pb-3 shrink-0">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-xl font-semibold">Messages</h2>
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setShowUserSearch(!showUserSearch)}
-            className="h-9 w-9 rounded-lg hover:bg-muted"
+            className="h-8 w-8 rounded-lg hover:bg-muted"
             title="Search"
             aria-label="Search conversations"
           >
@@ -179,7 +179,7 @@ export function ConversationSidebar({
         {/* CTA Button */}
         <Button
           onClick={() => setShowCreateGroupDialog(true)}
-          className="w-full h-11 rounded-xl bg-orange-500 hover:bg-orange-600 text-white shadow-sm mb-4"
+          className="w-full h-10 rounded-xl bg-orange-500 hover:bg-orange-600 text-white shadow-sm text-sm font-medium"
         >
           <Plus className="h-4 w-4 mr-2" />
           Create group
@@ -191,7 +191,7 @@ export function ConversationSidebar({
             placeholder="Search users..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-xl bg-muted/50 border-0 px-4 h-10"
+            className="w-full rounded-xl bg-muted/50 border-0 px-4 h-9 mt-3 text-sm"
             autoFocus
             aria-label="Search for users to start a conversation"
           />
@@ -283,7 +283,7 @@ export function ConversationSidebar({
                     <div
                       key={conversation._id}
                       className={cn(
-                        "group relative flex items-start gap-3 p-3 pr-12 rounded-xl transition-all duration-200",
+                        "group relative flex items-start gap-3 p-2.5 pr-11 rounded-xl transition-all duration-200 overflow-hidden",
                         isSelected ? "bg-muted/80" : "hover:bg-muted/40",
                       )}
                     >
@@ -301,12 +301,12 @@ export function ConversationSidebar({
                       >
                         <div className="relative shrink-0">
                           {conversation.isGroup ? (
-                            <div className="h-12 w-12 rounded-full bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center">
+                            <div className="h-11 w-11 rounded-full bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center">
                               <Users className="h-5 w-5 text-white" />
                             </div>
                           ) : (
                             <>
-                              <Avatar className="h-12 w-12 border-2 border-background">
+                              <Avatar className="h-11 w-11 border-2 border-background">
                                 {conversation.otherParticipants[0]
                                   ?.imageUrl && (
                                   <AvatarImage
@@ -337,10 +337,10 @@ export function ConversationSidebar({
                           )}
                         </div>
 
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2 mb-0.5">
-                            <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                              <p className="font-medium truncate text-sm">
+                        <div className="flex-1 min-w-0 overflow-hidden max-w-full">
+                          <div className="flex items-center justify-between gap-2 mb-0.5">
+                            <div className="flex items-center gap-1.5 min-w-0 flex-shrink overflow-hidden max-w-[calc(100%-60px)]">
+                              <p className="font-medium text-sm line-clamp-1">
                                 {conversation.isGroup
                                   ? conversation.groupName
                                   : conversation.otherParticipants[0]?.name ||
@@ -386,25 +386,27 @@ export function ConversationSidebar({
                             )}
                           </div>
 
-                          <div className="flex items-center gap-2">
-                            <p className="text-xs text-muted-foreground truncate flex-1 min-w-0">
-                              {conversation.isGroup ? (
-                                <span className="flex items-center gap-1">
-                                  <Users className="h-3 w-3 shrink-0" />
-                                  {conversation.participants.length} members
-                                </span>
-                              ) : conversation.lastMessage ? (
-                                conversation.lastMessage.isDeleted ? (
-                                  <span className="italic">
-                                    This message was deleted
-                                  </span>
+                          <div className="flex items-center gap-2 min-w-0 max-w-full">
+                            <div className="flex-1 min-w-0 overflow-hidden max-w-full">
+                              <p className="text-xs text-muted-foreground line-clamp-1">
+                                {conversation.isGroup ? (
+                                  <>
+                                    <Users className="h-3 w-3 inline mr-1 align-middle" />
+                                    <span>
+                                      {conversation.participants.length} members
+                                    </span>
+                                  </>
+                                ) : conversation.lastMessage ? (
+                                  conversation.lastMessage.isDeleted ? (
+                                    "This message was deleted"
+                                  ) : (
+                                    conversation.lastMessage.content
+                                  )
                                 ) : (
-                                  conversation.lastMessage.content
-                                )
-                              ) : (
-                                "No messages yet"
-                              )}
-                            </p>
+                                  "No messages yet"
+                                )}
+                              </p>
+                            </div>
 
                             {conversation.unreadCount > 0 && (
                               <Badge
@@ -426,7 +428,7 @@ export function ConversationSidebar({
                           variant="ghost"
                           size="icon"
                           onClick={(e) => handleDeleteClick(e, conversation)}
-                          className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100 absolute right-2 top-2 rounded-full hover:bg-destructive/10"
+                          className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100 absolute right-2 top-1/2 -translate-y-1/2 rounded-full hover:bg-destructive/10"
                           title="Delete conversation"
                           aria-label={`Delete conversation with ${conversation.otherParticipants[0]?.name || "Unknown User"}`}
                         >

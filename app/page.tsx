@@ -117,19 +117,22 @@ export default function Home() {
         Skip to main content
       </a>
 
-      <header className="border-b bg-background shrink-0" role="banner">
-        <div className="flex h-16 items-center px-6 gap-4">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center">
-              <MessageSquare className="h-5 w-5 text-white" />
+      <header
+        className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shrink-0 shadow-sm"
+        role="banner"
+      >
+        <div className="flex h-14 items-center px-4 md:px-6 gap-4">
+          <div className="flex items-center gap-2.5">
+            <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center shadow-sm">
+              <MessageSquare className="h-4.5 w-4.5 text-white" />
             </div>
-            <h1 className="text-xl font-semibold text-foreground">
+            <h1 className="text-lg md:text-xl font-semibold text-foreground">
               Tars Chat App
             </h1>
           </div>
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex items-center gap-2.5">
             <ThemeToggle />
-            <div className="scale-110">
+            <div className="scale-100">
               <UserButton />
             </div>
           </div>
@@ -156,7 +159,7 @@ export default function Home() {
             {/* Desktop: Side-by-side layout */}
             {/* Mobile: Conditional display based on showMobileChat */}
             <div
-              className={`w-full md:w-80 lg:w-96 border-r bg-card/50 backdrop-blur-sm flex flex-col shrink-0 h-full shadow-sm ${
+              className={`w-full md:w-80 lg:w-[360px] border-r bg-card/50 backdrop-blur-sm flex flex-col shrink-0 h-full ${
                 showMobileChat ? "hidden md:flex" : "flex"
               }`}
               role="navigation"

@@ -98,6 +98,7 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
   const [isSending, setIsSending] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const messageInputRef = useRef<HTMLInputElement>(null);
   const previousMessageCountRef = useRef<number>(0);
   const visibilityTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
   const markedAsReadRef = useRef<Set<string>>(new Set());
@@ -152,6 +153,11 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
       markRead({ conversationId }).catch((error) => {
         console.error("Failed to mark conversation as read:", error);
       });
+
+      // Autofocus the message input when conversation is opened
+      setTimeout(() => {
+        messageInputRef.current?.focus();
+      }, 100);
     }
     // Only run when conversation changes, not when messages change
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -357,6 +363,41 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
     visibilityTimersRef.current.clear();
   }, [conversationId]);
 
+  // Global keyboard handler - focus input when typing anywhere
+  useEffect(() => {
+    const handleGlobalKeyPress = (e: KeyboardEvent) => {
+      // Don't interfere with special keys, shortcuts, or if user is already typing in an input
+      if (
+        e.ctrlKey ||
+        e.metaKey ||
+        e.altKey ||
+        e.key === "Escape" ||
+        e.key === "Tab" ||
+        e.key === "Enter" ||
+        (e.target instanceof HTMLElement &&
+          (e.target.tagName === "INPUT" ||
+            e.target.tagName === "TEXTAREA" ||
+            e.target.isContentEditable))
+      ) {
+        return;
+      }
+
+      // If it's a printable character, focus the input and add the character
+      if (e.key.length === 1 && messageInputRef.current) {
+        e.preventDefault();
+        messageInputRef.current.focus();
+        // Manually add the character to the input
+        setMessageContent((prev) => prev + e.key);
+      }
+    };
+
+    window.addEventListener("keydown", handleGlobalKeyPress);
+
+    return () => {
+      window.removeEventListener("keydown", handleGlobalKeyPress);
+    };
+  }, []);
+
   // Handle input change with typing detection
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
@@ -557,17 +598,17 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
     <div className="flex h-full w-full flex-col">
       {/* Chat Header */}
       {conversation && (
-        <div className="border-b bg-background px-6 py-4 shrink-0 z-10">
-          <div className="flex items-center gap-3">
+        <div className="border-b bg-background px-4 md:px-5 py-3 shrink-0 z-10">
+          <div className="flex items-center gap-2.5">
             {conversation.isGroup ? (
               <>
                 <div className="relative">
-                  <div className="h-12 w-12 rounded-full bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center">
+                  <div className="h-11 w-11 rounded-full bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center">
                     <Users className="h-5 w-5 text-white" />
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h2 className="font-semibold text-base truncate">
+                  <h2 className="font-semibold text-sm md:text-base truncate">
                     {conversation.groupName}
                   </h2>
                   <button
@@ -587,7 +628,7 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
                     onClick={() => setShowAddMemberDialog(true)}
                     title="Add Member"
                     aria-label="Add member to group"
-                    className="h-9 w-9 rounded-lg"
+                    className="h-8 w-8 rounded-lg"
                   >
                     <UserPlus className="h-4 w-4" />
                   </Button>
@@ -606,7 +647,7 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
             ) : conversation.otherParticipants[0] ? (
               <>
                 <div className="relative">
-                  <Avatar className="h-12 w-12 border-2 border-background">
+                  <Avatar className="h-11 w-11 border-2 border-background">
                     {conversation.otherParticipants[0].imageUrl && (
                       <AvatarImage
                         src={conversation.otherParticipants[0].imageUrl}
@@ -626,7 +667,7 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <h2 className="font-semibold text-base truncate">
+                    <h2 className="font-semibold text-sm md:text-base truncate">
                       {conversation.otherParticipants[0].name}
                     </h2>
                     {conversation.otherParticipants[0].email ===
@@ -762,14 +803,14 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
       </div>
 
       {/* Message Input Area */}
-      <div className="px-6 py-4 bg-background border-t shrink-0 z-20 relative">
+      <div className="px-4 md:px-5 py-3 bg-background border-t shrink-0 z-20 relative">
         {/* Failed Messages Display */}
         {failedMessages.length > 0 && (
           <div className="mb-3 space-y-2">
             {failedMessages.map((failedMsg) => (
               <div
                 key={failedMsg.id}
-                className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-xl"
+                className="flex items-start gap-2 p-2.5 bg-destructive/10 border border-destructive/20 rounded-xl"
               >
                 <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
@@ -784,7 +825,7 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
                   variant="ghost"
                   size="sm"
                   onClick={() => handleRetryMessage(failedMsg)}
-                  className="shrink-0 h-8 rounded-lg"
+                  className="shrink-0 h-7 rounded-lg text-xs"
                 >
                   <RefreshCw className="h-3 w-3 mr-1" />
                   Retry
@@ -794,15 +835,19 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
           </div>
         )}
 
-        <form onSubmit={handleSendMessage} className="flex items-center gap-3">
+        <form
+          onSubmit={handleSendMessage}
+          className="flex items-center gap-2.5"
+        >
           <EmojiPickerInput onEmojiSelect={handleEmojiSelect} />
           <div className="flex-1 relative">
             <Input
+              ref={messageInputRef}
               type="text"
               placeholder="Type a message..."
               value={messageContent}
               onChange={handleInputChange}
-              className="flex-1 h-12 rounded-full bg-muted/50 border-0 px-5 pr-14 focus-visible:ring-1 focus-visible:ring-orange-500/20 text-sm placeholder:text-muted-foreground/60"
+              className="flex-1 h-10 rounded-full bg-muted/50 border-0 px-4 pr-12 focus-visible:ring-1 focus-visible:ring-orange-500/20 text-sm placeholder:text-muted-foreground/60"
               disabled={isSending}
               aria-label="Message input"
               aria-describedby="message-input-description"
@@ -812,9 +857,9 @@ export function ChatArea({ conversationId, currentUserId }: ChatAreaProps) {
               size="icon"
               disabled={!messageContent.trim() || isSending}
               aria-label="Send message"
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-orange-500 hover:bg-orange-600 shadow-sm"
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-orange-500 hover:bg-orange-600 shadow-sm"
             >
-              <Send className="h-4 w-4" />
+              <Send className="h-3.5 w-3.5" />
             </Button>
           </div>
           <span id="message-input-description" className="sr-only">
